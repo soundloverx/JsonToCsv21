@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.overb</groupId>
+    <artifactId>JsonToCsv21</artifactId>
+    <version>1.0.0</version>
+    <name>JsonToCsv21</name>
+
+    <properties>
+        <java.version>21</java.version>
+        <javafx.version>21.0.8</javafx.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.controlsfx/controlsfx -->
+        <dependency>
+            <groupId>org.controlsfx</groupId>
+            <artifactId>controlsfx</artifactId>
+            <version>11.2.2</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.kordamp.ikonli/ikonli-javafx -->
+        <dependency>
+            <groupId>org.kordamp.ikonli</groupId>
+            <artifactId>ikonli-javafx</artifactId>
+            <version>12.4.0</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.kordamp.ikonli/ikonli-fontawesome-pack -->
+        <dependency>
+            <groupId>org.kordamp.ikonli</groupId>
+            <artifactId>ikonli-fontawesome-pack</artifactId>
+            <version>12.4.0</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.19.2</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/com.opencsv/opencsv -->
+        <dependency>
+            <groupId>com.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <version>5.11.2</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-lang3</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.18.0</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.38</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>1.7.0</version>
+                <executions>
+                    <execution>
+                        <goals><goal>detect</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.4.0</version>
+                <executions>
+                    <execution>
+                        <id>detect-os</id>
+                        <goals>
+                            <goal>parse-version</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <release>${java.version}</release>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+                <version>0.0.8</version>
+                <configuration>
+                    <mainClass>org.overb.jsontocsv.App</mainClass>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.panteleyev</groupId>
+                <artifactId>jpackage-maven-plugin</artifactId>
+                <version>1.6.6</version>
+                <executions>
+                    <execution>
+                        <id>package-app</id>
+                        <goals><goal>jpackage</goal></goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <input>${project.build.directory}</input>
+                    <mainJar>${project.build.finalName}.jar</mainJar>
+                    <mainClass>org.overb.jsontocsv.App</mainClass>
+                    <name>JsonToCsv21</name>
+                    <appVersion>${project.version}</appVersion>
+                    <destination>${project.build.directory}/jpackage</destination>
+
+                    <modulePaths>
+                        <modulePath>c:/Users/sound/OneDrive/Projects/javafx-sdk-21.0.8/lib</modulePath>
+                        <modulePath>c:/Users/sound/OneDrive/Projects/javafx-jmods-21.0.8</modulePath>
+                    </modulePaths>
+                    <addModules>
+                        <addModule>javafx.controls</addModule>
+                        <addModule>javafx.fxml</addModule>
+                    </addModules>
+
+                    <jLinkOptions>
+                        <jLinkOption>--strip-debug</jLinkOption>
+                        <jLinkOption>--compress=2</jLinkOption>
+                    </jLinkOptions>
+
+                    <type>EXE</type>
+                    <removeDestination>true</removeDestination>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+</project>
