@@ -1,8 +1,6 @@
 package org.overb.jsontocsv.controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -11,17 +9,17 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.MouseEvent;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import org.overb.jsontocsv.dto.CsvColumnDefinition;
 import org.overb.jsontocsv.elements.ReorderableRowFactory;
 import org.overb.jsontocsv.enums.ColumnTypes;
-import org.overb.jsontocsv.libs.JsonHelper;
 import org.overb.jsontocsv.libs.UiHelper;
+import org.overb.jsontocsv.services.CsvService;
+import org.overb.jsontocsv.services.JsonService;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.*;
 
 public class Main {
@@ -45,8 +43,9 @@ public class Main {
     @FXML
     private Button addCsvColumn;
 
+    private final JsonService jsonService = new JsonService();
+    private final CsvService csvService = new CsvService();
     private final ObservableList<CsvColumnDefinition> csvColumnDefinitions = FXCollections.observableArrayList();
-    private final ObjectMapper mapper = new ObjectMapper();
     private JsonNode rootNode;
     private Window window;
 
@@ -75,8 +74,26 @@ public class Main {
         });
 
         addCsvColumn.setOnAction(e -> {
-            AddColumn.show(window, csvColumnDefinitions);
+            EditColumn.show(window, csvColumnDefinitions, null);
         });
+
+        columnDefinitionsTable.setRowFactory(tv -> {
+            TableRow<CsvColumnDefinition> row = new TableRow<>();
+            row.setOnMouseClicked(evt -> editColumnDefinition(evt, row));
+            return row;
+        });
+    }
+
+    private void editColumnDefinition(MouseEvent evt, TableRow<CsvColumnDefinition> row) {
+        if (evt.getClickCount() == 2 && !row.isEmpty()) {
+            CsvColumnDefinition toEdit = row.getItem();
+            CsvColumnDefinition original = new CsvColumnDefinition(toEdit);
+            EditColumn.show(window, csvColumnDefinitions, toEdit);
+            if (!toEdit.equals(original)) {
+                columnDefinitionsTable.refresh();
+                generateCsvPreview();
+            }
+        }
     }
 
     private void resetEverything() {
@@ -91,25 +108,8 @@ public class Main {
         if (file == null) return;
         try {
             resetEverything();
-            String content = Files.readString(file.toPath(), StandardCharsets.UTF_8);
-            String trimmed = content.trim().replaceAll("\r", "");
-            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
-                rootNode = mapper.readTree(trimmed);
-            } else if (trimmed.contains("},{")) {
-                String wrapped = "[" + trimmed + "]";
-                rootNode = mapper.readTree(wrapped);
-            } else if (trimmed.startsWith("{") && trimmed.contains("}\n{")) {
-                ArrayNode arrayNode = mapper.createArrayNode();
-                for (String line : trimmed.split("\n")) {
-                    if (line.isBlank()) continue;
-                    arrayNode.add(mapper.readTree(line));
-                }
-                rootNode = arrayNode;
-            } else {
-                rootNode = mapper.readTree(trimmed);
-            }
+            rootNode = jsonService.loadFromFile(file);
             jsonTextArea.setText(rootNode.toPrettyString());
-
             parseJsonIntoCsvColumns(rootNode);
         } catch (Exception error) {
             UiHelper.errorBox(window, error);
@@ -117,7 +117,7 @@ public class Main {
     }
 
     private void parseJsonIntoCsvColumns(JsonNode rootNode) throws Exception {
-        boolean isNested = JsonHelper.isNested(rootNode);
+        boolean isNested = JsonService.isNested(rootNode);
         if (isNested) {
             UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info", "You have loaded a nested JSON.\nYou have to manually configure the CSV columns.");
             return;
@@ -142,7 +142,7 @@ public class Main {
 
     private void generateCsvPreview() {
         if (rootNode == null) return;
-        List<Map<String, String>> previewRows = extractSimpleCsvRows();
+        List<Map<String, String>> previewRows = csvService.generateCsvPreviewRows(rootNode, csvColumnDefinitions);
         csvTableView.getColumns().clear();
         for (CsvColumnDefinition def : csvColumnDefinitions) {
             TableColumn<Map<String, String>, String> col = new TableColumn<>(def.getCsvColumn());
@@ -152,33 +152,5 @@ public class Main {
         }
         ObservableList<Map<String, String>> data = FXCollections.observableArrayList(previewRows);
         csvTableView.setItems(data);
-    }
-
-    private List<Map<String, String>> extractSimpleCsvRows() {
-        List<Map<String, String>> rows = new ArrayList<>();
-        int limit = 20;
-        for (JsonNode node : rootNode) {
-            Map<String, String> row = new HashMap<>();
-            for (CsvColumnDefinition def : csvColumnDefinitions) {
-                String value = switch (def.getType()) {
-                    case DEFAULT -> extractJsonValue(node, def.getJsonColumn());
-                    case LITERAL -> def.getJsonColumn();
-                    default -> null;
-                };
-                row.put(def.getCsvColumn(), value);
-            }
-            rows.add(row);
-            if (--limit == 0) {
-                break;
-            }
-        }
-        return rows;
-    }
-
-    private String extractJsonValue(JsonNode rootNode, String fieldName) {
-        if (rootNode.get(fieldName) == null || rootNode.get(fieldName).isNull()) {
-            return null;
-        }
-        return rootNode.get(fieldName).asText();
     }
 }

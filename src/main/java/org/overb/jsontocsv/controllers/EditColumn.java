@@ -15,7 +15,7 @@ import org.overb.jsontocsv.dto.CsvColumnDefinition;
 import org.overb.jsontocsv.enums.ColumnTypes;
 import org.overb.jsontocsv.libs.UiHelper;
 
-public class AddColumn {
+public class EditColumn {
     @FXML
     private TextField nameField;
     @FXML
@@ -31,6 +31,7 @@ public class AddColumn {
 
     private Stage dialogStage;
     private Window window;
+    private CsvColumnDefinition definitionToEdit;
     @Setter
     private ObservableList<CsvColumnDefinition> csvColumnDefinitions;
 
@@ -50,13 +51,19 @@ public class AddColumn {
     private void onOk() {
         String name = nameField.getText().trim();
         for (CsvColumnDefinition definition : csvColumnDefinitions) {
-            if (definition.getCsvColumn().equals(name)) {
+            if (definition.getCsvColumn().equals(name) && !definition.equals(definitionToEdit)) {
                 UiHelper.messageBox(window, Alert.AlertType.ERROR, "Error", "The column name '" + name + "' already exists.");
                 return;
             }
         }
         ColumnTypes columnType = (ColumnTypes) toggleTypeGroup.getSelectedToggle().getUserData();
-        csvColumnDefinitions.add(new CsvColumnDefinition(name, pathField.getText().trim(), columnType));
+        if (definitionToEdit == null) {
+            csvColumnDefinitions.add(new CsvColumnDefinition(name, pathField.getText().trim(), columnType));
+        } else {
+            definitionToEdit.setType(columnType);
+            definitionToEdit.setCsvColumn(name);
+            definitionToEdit.setJsonColumn(pathField.getText().trim());
+        }
         dialogStage.close();
     }
 
@@ -65,19 +72,35 @@ public class AddColumn {
         dialogStage.close();
     }
 
-    public static void show(Window owner, ObservableList<CsvColumnDefinition> csvColumnDefinitions) {
+    public void setDefinitionToEdit(CsvColumnDefinition definitionToEdit) {
+        if (definitionToEdit == null) {
+            return;
+        }
+        this.definitionToEdit = definitionToEdit;
+        nameField.setText(definitionToEdit.getCsvColumn());
+        pathField.setText(definitionToEdit.getJsonColumn());
+
+        switch (definitionToEdit.getType()) {
+            case LITERAL -> rbLiteral.setSelected(true);
+            case FORMULA -> rbFormula.setSelected(true);
+            default -> rbDefault.setSelected(true);
+        }
+    }
+
+    public static void show(Window owner, ObservableList<CsvColumnDefinition> csvColumnDefinitions, CsvColumnDefinition definitionToEdit) {
         try {
-            FXMLLoader loader = new FXMLLoader(App.class.getResource("AddColumn.fxml"));
+            FXMLLoader loader = new FXMLLoader(App.class.getResource("EditColumn.fxml"));
             Parent pane = loader.load();
 
             Stage stage = new Stage();
             stage.initOwner(owner);
             stage.initModality(Modality.APPLICATION_MODAL);
-            stage.setTitle("Add column...");
+            stage.setTitle((definitionToEdit == null ? "Add " : "Edit ") + " column...");
             stage.setScene(new Scene(pane));
 
-            AddColumn form = loader.getController();
+            EditColumn form = loader.getController();
             form.setCsvColumnDefinitions(csvColumnDefinitions);
+            form.setDefinitionToEdit(definitionToEdit);
             form.dialogStage = stage;
 
             stage.showAndWait();

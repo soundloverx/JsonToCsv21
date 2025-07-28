@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.overb.jsontocsv.enums.ColumnTypes;
 
+import java.util.Objects;
+
 @NoArgsConstructor
 public class CsvColumnDefinition {
     @Getter
@@ -26,6 +28,12 @@ public class CsvColumnDefinition {
         setType(type);
     }
 
+    public CsvColumnDefinition(CsvColumnDefinition copy) {
+        this.csvColumn = copy.csvColumn;
+        this.jsonColumn = copy.jsonColumn;
+        setType(copy.type);
+    }
+
     public boolean isCustom() {
         return custom.get();
     }
@@ -41,5 +49,16 @@ public class CsvColumnDefinition {
     public void setType(ColumnTypes type) {
         this.type = type;
         this.setCustom(type.isCustom());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof CsvColumnDefinition that)) return false;
+        return Objects.equals(csvColumn, that.csvColumn) && Objects.equals(jsonColumn, that.jsonColumn) && type == that.type;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(csvColumn, jsonColumn, type);
     }
 }
