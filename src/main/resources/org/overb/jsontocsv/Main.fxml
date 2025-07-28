@@ -1,18 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.ToolBar?>
-<?import javafx.scene.control.Tooltip?>
-<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.input.KeyCodeCombination?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
-<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <SplitPane dividerPositions="0.5, 0.5" orientation="VERTICAL" xmlns="http://javafx.com/javafx/21.0.8"
            xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.overb.jsontocsv.controllers.Main">
@@ -21,57 +20,44 @@
             <items>
                 <TextArea fx:id="jsonTextArea" minHeight="200" promptText="JSON Input"
                           SplitPane.resizableWithParent="true"/>
-
                 <VBox minWidth="250">
                     <children>
-                        <HBox maxHeight="40.0" maxWidth="200.0" minHeight="40.0" minWidth="200.0" prefHeight="40.0"
-                              prefWidth="200.0" spacing="5.0">
-                            <children>
-                                <Button fx:id="newButton" maxWidth="Infinity">
-                                    <graphic>
-                                        <FontIcon iconLiteral="fa-fast-backward" iconSize="24"/>
-                                    </graphic>
-                                    <tooltip>
-                                        <Tooltip text="New JSON and CSV"/>
-                                    </tooltip>
-                                </Button>
-                                <Button fx:id="openJsonButton" maxWidth="Infinity">
-                                    <graphic>
-                                        <FontIcon iconLiteral="fa-folder-open-o" iconSize="24"/>
-                                    </graphic>
-                                    <tooltip>
-                                        <Tooltip text="Open JSON file"/>
-                                    </tooltip>
-                                </Button>
-                                <Button fx:id="saveCsvButton" maxWidth="Infinity">
-                                    <graphic>
-                                        <FontIcon iconLiteral="fa-save" iconSize="24"/>
-                                    </graphic>
-                                    <tooltip>
-                                        <Tooltip text="Save CSV"/>
-                                    </tooltip>
-                                </Button>
-                                <Button fx:id="addCsvColumn" maxWidth="Infinity">
-                                    <graphic>
-                                        <FontIcon iconLiteral="fa-plus" iconSize="24"/>
-                                    </graphic>
-                                    <tooltip>
-                                        <Tooltip text="Add CSV column"/>
-                                    </tooltip>
-                                </Button>
-                            </children>
-                            <padding>
-                                <Insets bottom="5.0" top="5.0"/>
-                            </padding>
-                        </HBox>
+                        <MenuBar maxHeight="25.0" minHeight="25.0">
+                            <menus>
+                                <Menu mnemonicParsing="false" text="File">
+                                    <items>
+                                        <MenuItem fx:id="mnuLoad" mnemonicParsing="false" onAction="#openJsonFile"
+                                                  text="Load JSON file..."/>
+                                        <MenuItem fx:id="mnuSaveCsv" mnemonicParsing="false" text="Save CSV..."/>
+                                        <MenuItem fx:id="mnuSaveDefinitions" mnemonicParsing="false"
+                                                  text="Save definitions..."/>
+                                    </items>
+                                </Menu>
+                                <Menu mnemonicParsing="false" text="Actions">
+                                    <items>
+                                        <MenuItem fx:id="mnuAddDefinition" mnemonicParsing="false"
+                                                  text="Add column definition...">
+                                            <accelerator>
+                                                <KeyCodeCombination alt="UP" code="SPACE" control="DOWN" meta="UP"
+                                                                    shift="DOWN" shortcut="UP"/>
+                                            </accelerator>
+                                        </MenuItem>
+                                        <MenuItem fx:id="mnuClearCsv" mnemonicParsing="false"
+                                                  onAction="#resetDefinitions" text="Clear all definitions"/>
+                                        <MenuItem fx:id="mnuClearEverything" mnemonicParsing="false"
+                                                  onAction="#resetEverything" text="Clear everything"/>
+                                    </items>
+                                </Menu>
+                            </menus>
+                        </MenuBar>
 
                         <TableView fx:id="columnDefinitionsTable" VBox.vgrow="ALWAYS">
                             <columns>
-                                <TableColumn fx:id="csvNameColumn" editable="false" text="CSV" reorderable="false"/>
-                                <TableColumn fx:id="jsonPathColumn" editable="false" text="JSON" reorderable="false"/>
+                                <TableColumn fx:id="csvNameColumn" editable="false" reorderable="false" text="CSV"/>
+                                <TableColumn fx:id="jsonPathColumn" editable="false" reorderable="false" text="JSON"/>
                                 <TableColumn fx:id="customColumn" editable="false" maxWidth="50.0" minWidth="50.0"
-                                             prefWidth="50.0" resizable="false" sortable="false" text="Custom"
-                                             reorderable="false"/>
+                                             prefWidth="50.0" reorderable="false" resizable="false" sortable="false"
+                                             text="Custom"/>
                             </columns>
                         </TableView>
 

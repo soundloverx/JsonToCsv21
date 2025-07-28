@@ -9,9 +9,10 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.input.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
+import javafx.util.Callback;
 import org.overb.jsontocsv.dto.CsvColumnDefinition;
 import org.overb.jsontocsv.elements.ReorderableRowFactory;
 import org.overb.jsontocsv.enums.ColumnTypes;
@@ -37,11 +38,7 @@ public class Main {
     @FXML
     private TableView<Map<String, String>> csvTableView;
     @FXML
-    private Button newButton;
-    @FXML
-    private Button openJsonButton;
-    @FXML
-    private Button addCsvColumn;
+    private MenuItem mnuAddDefinition;
 
     private final JsonService jsonService = new JsonService();
     private final CsvService csvService = new CsvService();
@@ -51,11 +48,15 @@ public class Main {
 
     @FXML
     public void initialize() {
-        newButton.setOnAction(e -> resetEverything());
-        openJsonButton.setOnAction(e -> openJsonFile());
-        openJsonButton.sceneProperty().addListener((observable, oldValue, newValue) -> {
+        mnuAddDefinition.setOnAction(e -> {
+            EditColumn.show(window, csvColumnDefinitions, null);
+        });
+        jsonTextArea.sceneProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 this.window = newValue.getWindow();
+                // also register the menu shortcut so it works regardless of control focus
+                KeyCombination keyCombination = mnuAddDefinition.getAccelerator();
+                newValue.getAccelerators().put(keyCombination, () -> mnuAddDefinition.fire());
             }
         });
 
@@ -64,28 +65,22 @@ public class Main {
         customColumn.setCellValueFactory(new PropertyValueFactory<>("custom"));
         customColumn.setCellFactory(CheckBoxTableCell.forTableColumn(customColumn));
         columnDefinitionsTable.setItems(csvColumnDefinitions);
-        columnDefinitionsTable.setRowFactory(new ReorderableRowFactory<>(csvColumnDefinitions));
+        Callback<TableView<CsvColumnDefinition>, TableRow<CsvColumnDefinition>> reorderFactory = new ReorderableRowFactory<>(csvColumnDefinitions);
+        columnDefinitionsTable.setRowFactory(tv -> {
+            TableRow<CsvColumnDefinition> row = reorderFactory.call(tv);
+            row.setOnMouseClicked(evt -> editColumnDefinition(evt, row));
+            return row;
+        });
         columnDefinitionsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-
         csvColumnDefinitions.addListener((ListChangeListener<CsvColumnDefinition>) change -> {
             while (change.next()) {
                 generateCsvPreview();
             }
         });
-
-        addCsvColumn.setOnAction(e -> {
-            EditColumn.show(window, csvColumnDefinitions, null);
-        });
-
-        columnDefinitionsTable.setRowFactory(tv -> {
-            TableRow<CsvColumnDefinition> row = new TableRow<>();
-            row.setOnMouseClicked(evt -> editColumnDefinition(evt, row));
-            return row;
-        });
     }
 
     private void editColumnDefinition(MouseEvent evt, TableRow<CsvColumnDefinition> row) {
-        if (evt.getClickCount() == 2 && !row.isEmpty()) {
+        if (evt.getButton() == MouseButton.PRIMARY && evt.getClickCount() == 2 && !row.isEmpty()) {
             CsvColumnDefinition toEdit = row.getItem();
             CsvColumnDefinition original = new CsvColumnDefinition(toEdit);
             EditColumn.show(window, csvColumnDefinitions, toEdit);
@@ -96,13 +91,20 @@ public class Main {
         }
     }
 
-    private void resetEverything() {
-        jsonTextArea.clear();
+    @FXML
+    private void resetDefinitions() {
         csvTableView.getItems().clear();
         csvColumnDefinitions.clear();
+    }
+
+    @FXML
+    private void resetEverything() {
+        resetDefinitions();
+        jsonTextArea.clear();
         rootNode = null;
     }
 
+    @FXML
     private void openJsonFile() {
         File file = UiHelper.openFileChooser(jsonTextArea.getScene().getWindow(), "Open JSON file", new FileChooser.ExtensionFilter("JSON Files", "*.json"));
         if (file == null) return;
