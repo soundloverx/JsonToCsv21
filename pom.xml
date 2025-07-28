@@ -20,11 +20,13 @@
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
             <version>${javafx.version}</version>
+            <classifier>win</classifier>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-fxml</artifactId>
             <version>${javafx.version}</version>
+            <classifier>win</classifier>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.controlsfx/controlsfx -->
@@ -121,6 +123,30 @@
                 <configuration>
                     <mainClass>org.overb.jsontocsv.App</mainClass>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <!-- avoid “myapp.jar” + “-shaded.jar” naming -->
+                            <finalName>${project.artifactId}-${project.version}-jar-with-dependencies</finalName>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>org.overb.jsontocsv.App</mainClass>
+                                </transformer>
+                            </transformers>
+                            <minimizeJar>true</minimizeJar>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
