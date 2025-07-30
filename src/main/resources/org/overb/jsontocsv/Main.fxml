@@ -13,39 +13,31 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<SplitPane dividerPositions="0.5, 0.5" orientation="VERTICAL" xmlns="http://javafx.com/javafx/21.0.8"
-           xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.overb.jsontocsv.controllers.Main">
+<SplitPane dividerPositions="0.5, 0.5" orientation="VERTICAL" prefHeight="270.0" prefWidth="638.0" xmlns="http://javafx.com/javafx/21.0.8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.overb.jsontocsv.controllers.Main">
     <items>
         <SplitPane dividerPositions="0.5" orientation="HORIZONTAL">
             <items>
-                <TextArea fx:id="jsonTextArea" minHeight="200" promptText="JSON Input"
-                          SplitPane.resizableWithParent="true"/>
+                <TextArea fx:id="jsonTextArea" minHeight="200" promptText="JSON Input" SplitPane.resizableWithParent="true" />
                 <VBox minWidth="250">
                     <children>
                         <MenuBar maxHeight="25.0" minHeight="25.0">
                             <menus>
                                 <Menu mnemonicParsing="false" text="File">
                                     <items>
-                                        <MenuItem fx:id="mnuLoad" mnemonicParsing="false" onAction="#openJsonFile"
-                                                  text="Load JSON file..."/>
-                                        <MenuItem fx:id="mnuSaveCsv" mnemonicParsing="false" text="Save CSV..."/>
-                                        <MenuItem fx:id="mnuSaveDefinitions" mnemonicParsing="false"
-                                                  text="Save definitions..."/>
+                                        <MenuItem fx:id="mnuLoad" mnemonicParsing="false" onAction="#openJsonFile" text="Load JSON file..." />
+                                        <MenuItem fx:id="mnuSaveCsv" mnemonicParsing="false" text="Save CSV..." />
+                                        <MenuItem fx:id="mnuSaveDefinitions" mnemonicParsing="false" text="Save definitions..." />
                                     </items>
                                 </Menu>
                                 <Menu mnemonicParsing="false" text="Actions">
                                     <items>
-                                        <MenuItem fx:id="mnuAddDefinition" mnemonicParsing="false"
-                                                  text="Add column definition...">
+                                        <MenuItem fx:id="mnuAddDefinition" mnemonicParsing="false" text="Add column definition...">
                                             <accelerator>
-                                                <KeyCodeCombination alt="UP" code="SPACE" control="DOWN" meta="UP"
-                                                                    shift="DOWN" shortcut="UP"/>
+                                                <KeyCodeCombination alt="UP" code="SPACE" control="DOWN" meta="UP" shift="DOWN" shortcut="UP" />
                                             </accelerator>
                                         </MenuItem>
-                                        <MenuItem fx:id="mnuClearCsv" mnemonicParsing="false"
-                                                  onAction="#resetDefinitions" text="Clear all definitions"/>
-                                        <MenuItem fx:id="mnuClearEverything" mnemonicParsing="false"
-                                                  onAction="#resetEverything" text="Clear everything"/>
+                                        <MenuItem fx:id="mnuClearCsv" mnemonicParsing="false" onAction="#resetDefinitions" text="Clear all definitions" />
+                                        <MenuItem fx:id="mnuClearEverything" mnemonicParsing="false" onAction="#resetEverything" text="Clear everything" />
                                     </items>
                                 </Menu>
                             </menus>
@@ -53,11 +45,9 @@
 
                         <TableView fx:id="columnDefinitionsTable" VBox.vgrow="ALWAYS">
                             <columns>
-                                <TableColumn fx:id="csvNameColumn" editable="false" reorderable="false" text="CSV"/>
-                                <TableColumn fx:id="jsonPathColumn" editable="false" reorderable="false" text="JSON"/>
-                                <TableColumn fx:id="customColumn" editable="false" maxWidth="50.0" minWidth="50.0"
-                                             prefWidth="50.0" reorderable="false" resizable="false" sortable="false"
-                                             text="Custom"/>
+                                <TableColumn fx:id="csvNameColumn" editable="false" reorderable="false" text="CSV" />
+                                <TableColumn fx:id="jsonPathColumn" editable="false" reorderable="false" text="JSON" />
+                                <TableColumn fx:id="customColumn" editable="false" maxWidth="50.0" minWidth="50.0" prefWidth="50.0" reorderable="false" resizable="false" sortable="false" text="Custom" />
                             </columns>
                         </TableView>
 
@@ -65,12 +55,12 @@
                 </VBox>
             </items>
         </SplitPane>
-        <TableView fx:id="csvTableView" minHeight="200" SplitPane.resizableWithParent="true"/>
+        <TableView fx:id="csvTableView" minHeight="200" SplitPane.resizableWithParent="true" />
         <ToolBar maxHeight="20.0" minHeight="20.0" nodeOrientation="RIGHT_TO_LEFT" prefHeight="20.0">
             <items>
                 <Label alignment="CENTER_RIGHT" text="Copyright © 2025, Cristi Stan">
                     <font>
-                        <Font size="10.0"/>
+                        <Font size="10.0" />
                     </font>
                 </Label>
             </items>

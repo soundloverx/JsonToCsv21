@@ -81,10 +81,10 @@ public class Main {
 
     private void editColumnDefinition(MouseEvent evt, TableRow<CsvColumnDefinition> row) {
         if (evt.getButton() == MouseButton.PRIMARY && evt.getClickCount() == 2 && !row.isEmpty()) {
-            CsvColumnDefinition toEdit = row.getItem();
-            CsvColumnDefinition original = new CsvColumnDefinition(toEdit);
-            EditColumn.show(window, csvColumnDefinitions, toEdit);
-            if (!toEdit.equals(original)) {
+            CsvColumnDefinition edited = row.getItem();
+            CsvColumnDefinition original = new CsvColumnDefinition(edited);
+            EditColumn.show(window, csvColumnDefinitions, edited);
+            if (!edited.equals(original)) {
                 columnDefinitionsTable.refresh();
                 generateCsvPreview();
             }
