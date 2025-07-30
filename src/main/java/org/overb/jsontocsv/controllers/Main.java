@@ -5,6 +5,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTableCell;
@@ -15,6 +16,7 @@ import javafx.stage.Window;
 import javafx.util.Callback;
 import org.overb.jsontocsv.dto.CsvColumnDefinition;
 import org.overb.jsontocsv.dto.NamedSchema;
+import org.overb.jsontocsv.elements.NamedSchemaTreeCell;
 import org.overb.jsontocsv.elements.ReorderableRowFactory;
 import org.overb.jsontocsv.enums.ColumnTypes;
 import org.overb.jsontocsv.libs.JsonSchemaHelper;
@@ -59,26 +61,9 @@ public class Main {
                 newValue.getAccelerators().put(keyCombination, () -> mnuAddDefinition.fire());
             }
         });
-        tvJsonSchema.setCellFactory(tv -> new TreeCell<>() {
-            @Override
-            protected void updateItem(NamedSchema ns, boolean empty) {
-                super.updateItem(ns, empty);
-                if (empty || ns == null) {
-                    setText(null);
-                } else {
-                    TreeItem<NamedSchema> item = getTreeItem();
-                    if (item != null) {
-                        item.setExpanded(true);
-                    }
-                    String typeHint = switch (ns.schema()) {
-                        case JsonSchemaHelper.ObjectSchema o -> " {}";
-                        case JsonSchemaHelper.ArraySchema a -> " []";
-                        default -> "";
-                    };
-                    setText(ns.name() + typeHint);
-                }
-            }
-        });
+        tvJsonSchema.addEventHandler(TreeItem.branchExpandedEvent(), Event::consume);
+        tvJsonSchema.addEventHandler(TreeItem.branchCollapsedEvent(), Event::consume);
+        tvJsonSchema.setCellFactory(tv -> new NamedSchemaTreeCell());
 
         csvNameColumn.setCellValueFactory(new PropertyValueFactory<>("csvColumn"));
         jsonPathColumn.setCellValueFactory(new PropertyValueFactory<>("jsonColumn"));
@@ -93,7 +78,7 @@ public class Main {
         });
         columnDefinitionsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         csvColumnDefinitions.addListener((ListChangeListener<CsvColumnDefinition>) change -> {
-            while (change.next()) {
+            if (change.next()) {
                 generateCsvPreview();
             }
         });
@@ -131,7 +116,6 @@ public class Main {
         try {
             resetEverything();
             rootNode = JsonService.loadFromFile(file);
-//            jsonTextArea.setText(JsonService.extractSchema(rootNode));
             loadJsonSchemaIntoTree();
             parseJsonIntoCsvColumns(rootNode);
         } catch (Exception error) {
@@ -140,22 +124,27 @@ public class Main {
     }
 
     private void loadJsonSchemaIntoTree() {
-        TreeItem<NamedSchema> rootItem = toTreeItem("root", JsonService.buildSchema(rootNode));
-        rootItem.setExpanded(true);
+        JsonSchemaHelper.Schema schema = JsonService.buildSchema(rootNode);
+        TreeItem<NamedSchema> rootItem = toTreeItem("", schema);
+        if (rootItem != null) {
+            rootItem.setExpanded(true);
+        }
         tvJsonSchema.setRoot(rootItem);
     }
 
     private TreeItem<NamedSchema> toTreeItem(String name, JsonSchemaHelper.Schema schema) {
-        TreeItem<NamedSchema> item = new TreeItem<>(new NamedSchema(name, schema));
-        if (schema instanceof JsonSchemaHelper.ObjectSchema obj) {
-            obj.fields.forEach((fieldName, subSchema) ->
-                    item.getChildren().add(toTreeItem(fieldName, subSchema))
-            );
-        } else if (schema instanceof JsonSchemaHelper.ArraySchema arr) {
-            TreeItem<NamedSchema> arrayNode =
-                    new TreeItem<>(new NamedSchema(name, schema));
-            arrayNode.getChildren().add(toTreeItem("", arr.elementSchema));
-            item.getChildren().add(arrayNode);
+        TreeItem<NamedSchema> item;
+        if (schema instanceof JsonSchemaHelper.ArraySchema arr) {
+            item = new TreeItem<>(new NamedSchema(name, schema));
+            item.getChildren().add(toTreeItem("", arr.elementSchema));
+        } else if (schema instanceof JsonSchemaHelper.ObjectSchema obj) {
+            item = new TreeItem<>(new NamedSchema(name, schema));
+            obj.fields.forEach((fieldName, subSchema) -> item.getChildren().add(toTreeItem(fieldName, subSchema)));
+        } else {
+            item = new TreeItem<>(new NamedSchema(name, schema));
+        }
+        if ((item.getValue() == null || item.getValue().name().isEmpty()) && (item.getChildren() == null || item.getChildren().isEmpty())) {
+            return null;
         }
         return item;
     }
