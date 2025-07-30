@@ -14,8 +14,10 @@ import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import javafx.util.Callback;
 import org.overb.jsontocsv.dto.CsvColumnDefinition;
+import org.overb.jsontocsv.dto.NamedSchema;
 import org.overb.jsontocsv.elements.ReorderableRowFactory;
 import org.overb.jsontocsv.enums.ColumnTypes;
+import org.overb.jsontocsv.libs.JsonSchemaHelper;
 import org.overb.jsontocsv.libs.UiHelper;
 import org.overb.jsontocsv.services.CsvService;
 import org.overb.jsontocsv.services.JsonService;
@@ -26,7 +28,7 @@ import java.util.*;
 public class Main {
 
     @FXML
-    private TextArea jsonTextArea;
+    private TreeView<NamedSchema> tvJsonSchema;
     @FXML
     private TableView<CsvColumnDefinition> columnDefinitionsTable;
     @FXML
@@ -40,8 +42,6 @@ public class Main {
     @FXML
     private MenuItem mnuAddDefinition;
 
-    private final JsonService jsonService = new JsonService();
-    private final CsvService csvService = new CsvService();
     private final ObservableList<CsvColumnDefinition> csvColumnDefinitions = FXCollections.observableArrayList();
     private JsonNode rootNode;
     private Window window;
@@ -51,12 +51,32 @@ public class Main {
         mnuAddDefinition.setOnAction(e -> {
             EditColumn.show(window, csvColumnDefinitions, null);
         });
-        jsonTextArea.sceneProperty().addListener((observable, oldValue, newValue) -> {
+        tvJsonSchema.sceneProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 this.window = newValue.getWindow();
                 // also register the menu shortcut so it works regardless of control focus
                 KeyCombination keyCombination = mnuAddDefinition.getAccelerator();
                 newValue.getAccelerators().put(keyCombination, () -> mnuAddDefinition.fire());
+            }
+        });
+        tvJsonSchema.setCellFactory(tv -> new TreeCell<>() {
+            @Override
+            protected void updateItem(NamedSchema ns, boolean empty) {
+                super.updateItem(ns, empty);
+                if (empty || ns == null) {
+                    setText(null);
+                } else {
+                    TreeItem<NamedSchema> item = getTreeItem();
+                    if (item != null) {
+                        item.setExpanded(true);
+                    }
+                    String typeHint = switch (ns.schema()) {
+                        case JsonSchemaHelper.ObjectSchema o -> " {}";
+                        case JsonSchemaHelper.ArraySchema a -> " []";
+                        default -> "";
+                    };
+                    setText(ns.name() + typeHint);
+                }
             }
         });
 
@@ -100,22 +120,44 @@ public class Main {
     @FXML
     private void resetEverything() {
         resetDefinitions();
-        jsonTextArea.clear();
+        tvJsonSchema.setRoot(null);
         rootNode = null;
     }
 
     @FXML
     private void openJsonFile() {
-        File file = UiHelper.openFileChooser(jsonTextArea.getScene().getWindow(), "Open JSON file", new FileChooser.ExtensionFilter("JSON Files", "*.json"));
+        File file = UiHelper.openFileChooser(window, "Open JSON file", new FileChooser.ExtensionFilter("JSON Files", "*.json"));
         if (file == null) return;
         try {
             resetEverything();
-            rootNode = jsonService.loadFromFile(file);
-            jsonTextArea.setText(rootNode.toPrettyString());
+            rootNode = JsonService.loadFromFile(file);
+//            jsonTextArea.setText(JsonService.extractSchema(rootNode));
+            loadJsonSchemaIntoTree();
             parseJsonIntoCsvColumns(rootNode);
         } catch (Exception error) {
             UiHelper.errorBox(window, error);
         }
+    }
+
+    private void loadJsonSchemaIntoTree() {
+        TreeItem<NamedSchema> rootItem = toTreeItem("root", JsonService.buildSchema(rootNode));
+        rootItem.setExpanded(true);
+        tvJsonSchema.setRoot(rootItem);
+    }
+
+    private TreeItem<NamedSchema> toTreeItem(String name, JsonSchemaHelper.Schema schema) {
+        TreeItem<NamedSchema> item = new TreeItem<>(new NamedSchema(name, schema));
+        if (schema instanceof JsonSchemaHelper.ObjectSchema obj) {
+            obj.fields.forEach((fieldName, subSchema) ->
+                    item.getChildren().add(toTreeItem(fieldName, subSchema))
+            );
+        } else if (schema instanceof JsonSchemaHelper.ArraySchema arr) {
+            TreeItem<NamedSchema> arrayNode =
+                    new TreeItem<>(new NamedSchema(name, schema));
+            arrayNode.getChildren().add(toTreeItem("", arr.elementSchema));
+            item.getChildren().add(arrayNode);
+        }
+        return item;
     }
 
     private void parseJsonIntoCsvColumns(JsonNode rootNode) throws Exception {
@@ -144,7 +186,7 @@ public class Main {
 
     private void generateCsvPreview() {
         if (rootNode == null) return;
-        List<Map<String, String>> previewRows = csvService.generateCsvPreviewRows(rootNode, csvColumnDefinitions);
+        List<Map<String, String>> previewRows = CsvService.generateCsvPreviewRows(rootNode, csvColumnDefinitions);
         csvTableView.getColumns().clear();
         for (CsvColumnDefinition def : csvColumnDefinitions) {
             TableColumn<Map<String, String>, String> col = new TableColumn<>(def.getCsvColumn());

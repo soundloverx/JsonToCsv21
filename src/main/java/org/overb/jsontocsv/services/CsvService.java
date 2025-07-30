@@ -19,7 +19,7 @@ import java.util.Map;
 
 public class CsvService {
 
-    public List<Map<String, String>> generateCsvPreviewRows(JsonNode rootNode, List<CsvColumnDefinition> csvColumnDefinitions) {
+    public static List<Map<String, String>> generateCsvPreviewRows(JsonNode rootNode, List<CsvColumnDefinition> csvColumnDefinitions) {
         List<Map<String, String>> rows = new ArrayList<>();
         int limit = 20;
         for (JsonNode node : rootNode) {

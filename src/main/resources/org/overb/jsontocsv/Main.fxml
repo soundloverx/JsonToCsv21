@@ -7,8 +7,8 @@
 <?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
-<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.control.TreeView?>
 <?import javafx.scene.input.KeyCodeCombination?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
@@ -17,7 +17,7 @@
     <items>
         <SplitPane dividerPositions="0.5" orientation="HORIZONTAL">
             <items>
-                <TextArea fx:id="jsonTextArea" minHeight="200" promptText="JSON Input" SplitPane.resizableWithParent="true" />
+            <TreeView fx:id="tvJsonSchema" minHeight="200.0" showRoot="false" />
                 <VBox minWidth="250">
                     <children>
                         <MenuBar maxHeight="25.0" minHeight="25.0">
