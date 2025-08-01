@@ -100,9 +100,8 @@ public class Main {
             Dragboard db = tvJsonSchema.startDragAndDrop(TransferMode.COPY);
             ClipboardContent content = new ClipboardContent();
             List<String> names = selected.stream()
-                    .map(TreeItem::getValue)
-                    .filter(item -> item.schema() instanceof JsonSchemaHelper.PrimitiveSchema)
-                    .map(NamedSchema::name)
+                    .filter(item -> item.getValue().schema() instanceof JsonSchemaHelper.PrimitiveSchema)
+                    .map(item -> item.getValue().name())
                     .collect(Collectors.toList());
             content.put(NAMED_SCHEMA_LIST, names);
             db.setContent(content);
