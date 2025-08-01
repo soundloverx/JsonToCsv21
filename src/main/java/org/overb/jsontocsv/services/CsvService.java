@@ -8,6 +8,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.TableColumn;
 import org.overb.jsontocsv.dto.CsvColumnDefinition;
+import org.overb.jsontocsv.enums.ColumnTypes;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -16,6 +17,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class CsvService {
 
@@ -40,5 +43,45 @@ public class CsvService {
         return rows;
     }
 
-
+    public static ObservableList<Map<String, String>> previewRows(JsonNode json, String rootPath, List<CsvColumnDefinition> definitions) throws IllegalArgumentException {
+        if (rootPath != null && !rootPath.isBlank()) {
+            for (String seg : rootPath.split("\\.")) {
+                json = json.path(seg);
+            }
+        }
+        List<JsonNode> records = new ArrayList<>();
+        if (json.isArray()) {
+            for (JsonNode node : json) {
+                records.add(node);
+            }
+        } else {
+            records.add(json);
+        }
+        ObservableList<Map<String, String>> rows = FXCollections.observableArrayList();
+        for (JsonNode record : records) {
+            List<Map<String, String>> contexts = new ArrayList<>();
+            contexts.add(new HashMap<>());
+            for (CsvColumnDefinition def : definitions) {
+                String relPath = def.getJsonColumn();
+                List<JsonNode> found = JsonService.findNodesByPath(record, relPath);
+                List<Map<String, String>> next = new ArrayList<>();
+                for (Map<String, String> context : contexts) {
+                    if (found.isEmpty()) {
+                        Map<String, String> copy = new HashMap<>(context);
+                        copy.put(def.getCsvColumn(), "");
+                        next.add(copy);
+                    } else {
+                        for (JsonNode node : found) {
+                            Map<String, String> copy = new HashMap<>(context);
+                            copy.put(def.getCsvColumn(), node.isValueNode() ? node.asText() : node.toString());
+                            next.add(copy);
+                        }
+                    }
+                }
+                contexts = next;
+            }
+            rows.addAll(contexts);
+        }
+        return rows;
+    }
 }

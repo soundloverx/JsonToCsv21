@@ -30,6 +30,10 @@ import java.util.*;
 public class Main {
 
     @FXML
+    public TextField txtRoot;
+    @FXML
+    public MenuItem mnuRefresh;
+    @FXML
     private TreeView<NamedSchema> tvJsonSchema;
     @FXML
     private TableView<CsvColumnDefinition> columnDefinitionsTable;
@@ -44,8 +48,9 @@ public class Main {
     @FXML
     private MenuItem mnuAddDefinition;
 
+
     private final ObservableList<CsvColumnDefinition> csvColumnDefinitions = FXCollections.observableArrayList();
-    private JsonNode rootNode;
+    private JsonNode loadedJson;
     private Window window;
 
     @FXML
@@ -53,17 +58,21 @@ public class Main {
         mnuAddDefinition.setOnAction(e -> {
             EditColumn.show(window, csvColumnDefinitions, null);
         });
+        mnuRefresh.setOnAction(e -> {
+            generateCsvPreview();
+        });
         tvJsonSchema.sceneProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 this.window = newValue.getWindow();
                 // also register the menu shortcut so it works regardless of control focus
-                KeyCombination keyCombination = mnuAddDefinition.getAccelerator();
-                newValue.getAccelerators().put(keyCombination, () -> mnuAddDefinition.fire());
+                newValue.getAccelerators().put(mnuAddDefinition.getAccelerator(), () -> mnuAddDefinition.fire());
+                newValue.getAccelerators().put(mnuRefresh.getAccelerator(), () -> mnuRefresh.fire());
             }
         });
         tvJsonSchema.addEventHandler(TreeItem.branchExpandedEvent(), Event::consume);
         tvJsonSchema.addEventHandler(TreeItem.branchCollapsedEvent(), Event::consume);
         tvJsonSchema.setCellFactory(tv -> new NamedSchemaTreeCell());
+        tvJsonSchema.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
         csvNameColumn.setCellValueFactory(new PropertyValueFactory<>("csvColumn"));
         jsonPathColumn.setCellValueFactory(new PropertyValueFactory<>("jsonColumn"));
@@ -91,7 +100,6 @@ public class Main {
             EditColumn.show(window, csvColumnDefinitions, edited);
             if (!edited.equals(original)) {
                 columnDefinitionsTable.refresh();
-                generateCsvPreview();
             }
         }
     }
@@ -100,13 +108,14 @@ public class Main {
     private void resetDefinitions() {
         csvTableView.getItems().clear();
         csvColumnDefinitions.clear();
+        txtRoot.setText(null);
     }
 
     @FXML
     private void resetEverything() {
         resetDefinitions();
         tvJsonSchema.setRoot(null);
-        rootNode = null;
+        loadedJson = null;
     }
 
     @FXML
@@ -115,16 +124,16 @@ public class Main {
         if (file == null) return;
         try {
             resetEverything();
-            rootNode = JsonService.loadFromFile(file);
+            loadedJson = JsonService.loadFromFile(file);
             loadJsonSchemaIntoTree();
-            parseJsonIntoCsvColumns(rootNode);
+            parseJsonIntoCsvColumns(loadedJson);
         } catch (Exception error) {
             UiHelper.errorBox(window, error);
         }
     }
 
     private void loadJsonSchemaIntoTree() {
-        JsonSchemaHelper.Schema schema = JsonService.buildSchema(rootNode);
+        JsonSchemaHelper.Schema schema = JsonService.buildSchema(loadedJson);
         TreeItem<NamedSchema> rootItem = toTreeItem("", schema);
         if (rootItem != null) {
             rootItem.setExpanded(true);
@@ -150,9 +159,9 @@ public class Main {
     }
 
     private void parseJsonIntoCsvColumns(JsonNode rootNode) throws Exception {
-        boolean isNested = JsonService.isNested(rootNode);
+        boolean isNested = JsonService.maxDepth(rootNode) > 1;
         if (isNested) {
-            UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info", "You have loaded a nested JSON.\nYou have to manually configure the CSV columns.");
+            UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info", "You have loaded a nested JSON.\nYou have to manually configure the CSV columns.\nRemember to fill in the root node name.");
             return;
         }
         if (rootNode.isArray() && !rootNode.isEmpty()) {
@@ -174,8 +183,7 @@ public class Main {
     }
 
     private void generateCsvPreview() {
-        if (rootNode == null) return;
-        List<Map<String, String>> previewRows = CsvService.generateCsvPreviewRows(rootNode, csvColumnDefinitions);
+        if (loadedJson == null) return;
         csvTableView.getColumns().clear();
         for (CsvColumnDefinition def : csvColumnDefinitions) {
             TableColumn<Map<String, String>, String> col = new TableColumn<>(def.getCsvColumn());
@@ -183,7 +191,10 @@ public class Main {
             col.setReorderable(false);
             csvTableView.getColumns().add(col);
         }
-        ObservableList<Map<String, String>> data = FXCollections.observableArrayList(previewRows);
-        csvTableView.setItems(data);
+        try {
+            csvTableView.setItems(CsvService.previewRows(loadedJson, txtRoot.getText(), csvColumnDefinitions));
+        } catch (Exception e) {
+            UiHelper.errorBox(window, e);
+        }
     }
 }

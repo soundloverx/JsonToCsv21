@@ -8,7 +8,9 @@ import org.overb.jsontocsv.libs.JsonSchemaHelper;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class JsonService {
@@ -36,24 +38,17 @@ public class JsonService {
     }
 
     public static int maxDepth(JsonNode node) {
-        if (!node.isContainerNode()) {
-            return 1;
+        if (node.isArray()) {
+            return !node.isEmpty() ? 1 : 0;
         }
-        int maxChild = 0;
         if (node.isObject()) {
-            for (JsonNode child : node) {
-                maxChild = Math.max(maxChild, maxDepth(child));
+            int childMax = 0;
+            for (Iterator<JsonNode> it = node.elements(); it.hasNext(); ) {
+                childMax = Math.max(childMax, maxDepth(it.next()));
             }
-        } else if (node.isArray()) {
-            for (JsonNode element : node) {
-                maxChild = Math.max(maxChild, maxDepth(element));
-            }
+            return 1 + childMax;
         }
-        return maxChild;
-    }
-
-    public static boolean isNested(JsonNode node) {
-        return maxDepth(node) > 1;
+        return 0;
     }
 
     public static String extractJsonValue(JsonNode rootNode, String fieldName) {
@@ -93,5 +88,26 @@ public class JsonService {
         JsonSchemaHelper.Schema schema = buildSchema(json);
         return schema.instantiate();
 //        return JsonSchemaHelper.mapper.writerWithDefaultPrettyPrinter().writeValueAsString(minimal); //maybe I will customize the pretty printer someday
+    }
+
+    public static List<JsonNode> findNodesByPath(JsonNode root, String path) {
+        List<JsonNode> current = List.of(root);
+        for (String segment : path.split("\\.")) {
+            List<JsonNode> next = new ArrayList<>();
+            for (JsonNode node : current) {
+                JsonNode child = node.path(segment);
+                if (child.isMissingNode() || child.isNull()) {
+                    continue;
+                }
+                if (child.isArray()) {
+                    child.forEach(next::add);
+                } else {
+                    next.add(child);
+                }
+            }
+            current = next;
+            if (current.isEmpty()) break;
+        }
+        return current;
     }
 }
