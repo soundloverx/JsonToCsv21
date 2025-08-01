@@ -26,6 +26,7 @@ import org.overb.jsontocsv.services.JsonService;
 
 import java.io.File;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Main {
 
@@ -48,7 +49,7 @@ public class Main {
     @FXML
     private MenuItem mnuAddDefinition;
 
-
+    private static final DataFormat NAMED_SCHEMA_LIST = new DataFormat("application/x-java-named-schema-list");
     private final ObservableList<CsvColumnDefinition> csvColumnDefinitions = FXCollections.observableArrayList();
     private JsonNode loadedJson;
     private Window window;
@@ -90,6 +91,54 @@ public class Main {
             if (change.next()) {
                 generateCsvPreview();
             }
+        });
+
+        // drag & drop from the json schema into the csv definitions:
+        tvJsonSchema.setOnDragDetected(evt -> {
+            var selected = tvJsonSchema.getSelectionModel().getSelectedItems();
+            if (selected.isEmpty()) return;
+            Dragboard db = tvJsonSchema.startDragAndDrop(TransferMode.COPY);
+            ClipboardContent content = new ClipboardContent();
+            List<String> names = selected.stream()
+                    .map(TreeItem::getValue)
+                    .filter(item -> item.schema() instanceof JsonSchemaHelper.PrimitiveSchema)
+                    .map(NamedSchema::name)
+                    .collect(Collectors.toList());
+            content.put(NAMED_SCHEMA_LIST, names);
+            db.setContent(content);
+            evt.consume();
+        });
+        columnDefinitionsTable.setOnDragOver(evt -> {
+            if (evt.getGestureSource() != columnDefinitionsTable && evt.getDragboard().hasContent(NAMED_SCHEMA_LIST)) {
+                evt.acceptTransferModes(TransferMode.COPY);
+            }
+            evt.consume();
+        });
+        columnDefinitionsTable.setOnDragDropped(evt -> {
+            Dragboard db = evt.getDragboard();
+            boolean success = false;
+            if (db.hasContent(NAMED_SCHEMA_LIST)) {
+                @SuppressWarnings("unchecked")
+                List<String> names = (List<String>) db.getContent(NAMED_SCHEMA_LIST);
+                ObservableList<CsvColumnDefinition> items = columnDefinitionsTable.getItems();
+                for (String baseName : names) {
+                    String csvName = baseName;
+                    Set<String> existing = items.stream()
+                            .map(CsvColumnDefinition::getCsvColumn)
+                            .collect(Collectors.toSet());
+                    if (existing.contains(csvName)) {
+                        csvName = csvName + "_" + UUID.randomUUID();
+                    }
+                    CsvColumnDefinition def = new CsvColumnDefinition();
+                    def.setCsvColumn(csvName);
+                    def.setJsonColumn(baseName);
+                    def.setType(ColumnTypes.DEFAULT);
+                    items.add(def);
+                }
+                success = true;
+            }
+            evt.setDropCompleted(success);
+            evt.consume();
         });
     }
 

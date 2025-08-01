@@ -50,6 +50,10 @@ public class EditColumn {
     @FXML
     private void onOk() {
         String name = nameField.getText().trim();
+        if (name.isEmpty()) {
+            dialogStage.close();
+            return;
+        }
         for (CsvColumnDefinition definition : csvColumnDefinitions) {
             if (definition.getCsvColumn().equals(name) && !definition.equals(definitionToEdit)) {
                 UiHelper.messageBox(window, Alert.AlertType.ERROR, "Error", "The column name '" + name + "' already exists.");
@@ -97,6 +101,13 @@ public class EditColumn {
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setTitle((definitionToEdit == null ? "Add " : "Edit ") + " column...");
             stage.setScene(new Scene(pane));
+
+            stage.setOnShown(e -> {
+                double centerX = owner.getX() + (owner.getWidth() - stage.getWidth()) / 2;
+                double centerY = owner.getY() + (owner.getHeight() - stage.getHeight()) / 2;
+                stage.setX(centerX);
+                stage.setY(centerY);
+            });
 
             EditColumn form = loader.getController();
             form.setCsvColumnDefinitions(csvColumnDefinitions);
