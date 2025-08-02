@@ -2,12 +2,16 @@ package org.overb.jsontocsv.libs;
 
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import javafx.stage.PopupWindow;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.overb.jsontocsv.enums.FileDialogTypes;
 
 import java.io.File;
 
@@ -19,6 +23,7 @@ public class UiHelper {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
+        centerToOwner(alert);
         alert.showAndWait();
     }
 
@@ -39,16 +44,44 @@ public class UiHelper {
 
         alert.getDialogPane().setExpandableContent(textArea);
         alert.getDialogPane().setExpanded(true);
-
+        centerToOwner(alert);
         alert.showAndWait();
     }
 
-    public static File openFileChooser(Window owner, String title, FileChooser.ExtensionFilter... extensionFilters) {
+    public static File openFileChooser(Window owner, FileDialogTypes dialogType, String title, FileChooser.ExtensionFilter... extensionFilters) {
         FileChooser chooser = new FileChooser();
         chooser.setTitle(title);
         for (FileChooser.ExtensionFilter extensionFilter : extensionFilters) {
             chooser.getExtensionFilters().add(extensionFilter);
         }
-        return chooser.showOpenDialog(owner);
+        if (dialogType == FileDialogTypes.SAVE) {
+            return chooser.showSaveDialog(owner);
+        } else {
+            return chooser.showOpenDialog(owner);
+        }
+    }
+
+    public static void centerToOwner(Window owner, Window modal) {
+        modal.setOnShown(e -> {
+            double centerX = owner.getX() + (owner.getWidth() - modal.getWidth()) / 2;
+            double centerY = owner.getY() + (owner.getHeight() - modal.getHeight()) / 2;
+            modal.setX(centerX);
+            modal.setY(centerY);
+        });
+    }
+
+    public static void centerToOwner(Dialog<?> dialog) {
+        dialog.setOnShown(evt -> {
+            Window modalWindow = dialog.getDialogPane().getScene().getWindow();
+            Window owner = null;
+            if (modalWindow instanceof Stage stage) {
+                owner = stage.getOwner();
+            } else if (modalWindow instanceof PopupWindow popupWindow) {
+                owner = popupWindow.getOwnerWindow();
+            }
+            if (owner != null) {
+                centerToOwner(owner, modalWindow);
+            }
+        });
     }
 }
