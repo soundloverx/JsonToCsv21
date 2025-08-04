@@ -188,10 +188,10 @@ public class Main {
 
     private String buildFullTreePath(TreeItem<NamedSchema> item) {
         List<String> parts = new ArrayList<>();
-        TreeItem<NamedSchema> ti = item;
-        while (ti != null && ti.getValue() != null && ti.getParent() != null) {
-            parts.add(ti.getValue().name());
-            ti = ti.getParent();
+        TreeItem<NamedSchema> node = item;
+        while (node != null && node.getValue() != null && node.getParent() != null) {
+            parts.add(node.getValue().name());
+            node = node.getParent();
         }
         Collections.reverse(parts);
         return String.join(".", parts);
@@ -204,6 +204,7 @@ public class Main {
             EditColumn.show(window, csvColumnDefinitions, edited);
             if (!edited.equals(original)) {
                 columnDefinitionsTable.refresh();
+                generateCsvPreview();
             }
         }
     }

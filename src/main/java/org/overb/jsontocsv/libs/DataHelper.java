@@ -9,9 +9,17 @@ import org.overb.jsontocsv.dto.CsvColumnDefinition;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class DataHelper {
+
+    private static final DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static JsonNode loadJsonFile(File file) throws Exception {
         JsonNode rootNode = null;
@@ -73,52 +81,61 @@ public class DataHelper {
         return new JsonSchemaHelper.PrimitiveSchema();
     }
 
-    public static ObservableList<Map<String, String>> previewCsvRows(JsonNode json, String rootPath, List<CsvColumnDefinition> definitions, int limit) throws IllegalArgumentException {
+    public static ObservableList<Map<String, String>> previewCsvRows(JsonNode json, String rootPath, List<CsvColumnDefinition> definitions, int limit) {
         ObservableList<Map<String, String>> rows = FXCollections.observableArrayList();
-        if(definitions == null || definitions.isEmpty()) {
+        if (definitions == null || definitions.isEmpty()) {
             return rows;
         }
-        if (rootPath != null && !rootPath.isBlank()) {
-            for (String seg : rootPath.split("\\.")) {
-                json = json.path(seg);
-            }
-        }
-        List<JsonNode> records = new ArrayList<>();
-        if (json.isArray()) {
-            for (JsonNode node : json) {
-                records.add(node);
-            }
-        } else {
-            records.add(json);
-        }
+        JsonNode root = navigate(json, rootPath);
+        List<JsonNode> records = root.isArray()
+                ? StreamSupport.stream(root.spliterator(), false).toList()
+                : Collections.singletonList(root);
         for (JsonNode record : records) {
-            List<Map<String, String>> contexts = new ArrayList<>();
-            contexts.add(new HashMap<>());
-            for (CsvColumnDefinition def : definitions) {
-                String relPath = def.getJsonColumn();
-                List<JsonNode> found = findNodesByPath(record, relPath);
-                List<Map<String, String>> next = new ArrayList<>();
-                for (Map<String, String> context : contexts) {
-                    if (found.isEmpty()) {
-                        Map<String, String> copy = new HashMap<>(context);
-                        copy.put(def.getCsvColumn(), "");
-                        next.add(copy);
-                    } else {
-                        for (JsonNode node : found) {
-                            Map<String, String> copy = new HashMap<>(context);
-                            copy.put(def.getCsvColumn(), node.isValueNode() ? node.asText() : node.toString());
-                            next.add(copy);
-                        }
-                    }
-                }
-                contexts = next;
-            }
-            rows.addAll(contexts);
+            List<Map<String, String>> expanded = expandRecord(json, record, definitions);
+            rows.addAll(expanded);
             if (limit > 0 && rows.size() >= limit) {
                 break;
             }
         }
         return rows;
+    }
+
+    static JsonNode navigate(JsonNode node, String path) {
+        if (path == null || path.isBlank()) {
+            return node;
+        }
+        for (String seg : path.split("\\.")) {
+            node = node.path(seg);
+        }
+        return node;
+    }
+
+    private static List<Map<String, String>> expandRecord(JsonNode rootJson, JsonNode record, List<CsvColumnDefinition> definitions) {
+        List<Map<String, String>> contexts = new ArrayList<>();
+        contexts.add(new HashMap<>());
+        for (CsvColumnDefinition definition : definitions) {
+            contexts = contexts.stream()
+                    .flatMap(ctx -> expandField(ctx, rootJson, record, definition).stream())
+                    .toList();
+        }
+        return contexts;
+    }
+
+    private static List<Map<String, String>> expandField(Map<String, String> base, JsonNode rootJson, JsonNode record, CsvColumnDefinition columnDefinition) {
+        List<JsonNode> found = findNodesByPath(record, columnDefinition.getJsonColumn());
+        return switch (columnDefinition.getType()) {
+            case LITERAL ->
+                    List.of(FunctionsHelper.putValue(base, columnDefinition.getCsvColumn(), columnDefinition.getJsonColumn()));
+            case FORMULA -> FunctionsHelper.evaluateFunction(base, rootJson, record, columnDefinition);
+            default -> {
+                if (found.isEmpty()) {
+                    yield List.of(FunctionsHelper.putValue(base, columnDefinition.getCsvColumn(), null));
+                }
+                yield found.stream()
+                        .map(node -> FunctionsHelper.putValue(base, columnDefinition.getCsvColumn(), node.isValueNode() ? node.asText() : node.toString()))
+                        .collect(Collectors.toList());
+            }
+        };
     }
 
     public static List<JsonNode> findNodesByPath(JsonNode root, String path) {
