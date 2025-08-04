@@ -13,6 +13,7 @@ import lombok.Setter;
 import org.overb.jsontocsv.App;
 import org.overb.jsontocsv.dto.CsvColumnDefinition;
 import org.overb.jsontocsv.enums.ColumnTypes;
+import org.overb.jsontocsv.libs.CustomStringUtils;
 import org.overb.jsontocsv.libs.UiHelper;
 
 public class EditColumn {
@@ -53,6 +54,10 @@ public class EditColumn {
         if (name.isEmpty()) {
             dialogStage.close();
             return;
+        }
+        if (Preferences.applicationProperties.isSnakeCaseColumnNames()) {
+            name = CustomStringUtils.generateColumnName(name);
+            nameField.setText(name);
         }
         for (CsvColumnDefinition definition : csvColumnDefinitions) {
             if (definition.getCsvColumn().equals(name) && !definition.equals(definitionToEdit)) {
