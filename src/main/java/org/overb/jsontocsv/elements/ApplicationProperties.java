@@ -1,0 +1,61 @@
+package org.overb.jsontocsv.elements;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+@NoArgsConstructor
+@Getter
+@Setter
+public class ApplicationProperties {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+
+    @JsonProperty("snakeCaseColumnNames")
+    private boolean snakeCaseColumnNames;
+
+    @JsonProperty("usePreviewRowLimit")
+    private boolean usePreviewRowLimit;
+
+    @JsonProperty("previewRowLimit")
+    private int previewRowLimit;
+
+    public void save() throws IOException {
+        Path file = getConfigPath();
+        MAPPER.writeValue(Files.newBufferedWriter(file), this);
+    }
+
+    private static Path getConfigPath() throws IOException {
+        Path configDir = Paths.get(
+                System.getProperty("os.name").toLowerCase().contains("win")
+                        ? System.getenv("APPDATA")
+                        : System.getProperty("user.home"),
+                "org.overb.JsonToCsv"
+        );
+        Files.createDirectories(configDir);
+        return configDir.resolve("settings.json");
+    }
+
+    public static ApplicationProperties load() {
+        try {
+            Path configFile = getConfigPath();
+            if (Files.exists(configFile)) {
+                return MAPPER.readValue(Files.newBufferedReader(configFile), ApplicationProperties.class);
+            }
+        } catch (IOException e) {
+        }
+        ApplicationProperties defaultProperties = new ApplicationProperties();
+        defaultProperties.setSnakeCaseColumnNames(true);
+        defaultProperties.setUsePreviewRowLimit(true);
+        defaultProperties.setPreviewRowLimit(100);
+        return defaultProperties;
+    }
+}
