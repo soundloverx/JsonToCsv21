@@ -44,8 +44,8 @@
                                                 <MenuItem fx:id="mnuAddDefinition" mnemonicParsing="false"
                                                           text="Add column definition...">
                                                     <accelerator>
-                                                        <KeyCodeCombination alt="UP" code="SPACE" control="DOWN"
-                                                                            meta="UP" shift="DOWN" shortcut="UP"/>
+                                                        <KeyCodeCombination alt="UP" code="F4" control="UP" meta="UP"
+                                                                            shift="UP" shortcut="UP"/>
                                                     </accelerator>
                                                 </MenuItem>
                                                 <MenuItem fx:id="mnuRefresh" mnemonicParsing="false" text="Refresh">

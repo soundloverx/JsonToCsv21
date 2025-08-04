@@ -76,13 +76,8 @@ public class Main {
         tvJsonSchema.sceneProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 this.window = newValue.getWindow();
-                // also register the menu shortcut so it works regardless of control focus
-                newValue.getAccelerators().put(mnuAddDefinition.getAccelerator(), () -> mnuAddDefinition.fire());
-                newValue.getAccelerators().put(mnuRefresh.getAccelerator(), () -> mnuRefresh.fire());
             }
         });
-        tvJsonSchema.addEventHandler(TreeItem.branchExpandedEvent(), Event::consume);
-        tvJsonSchema.addEventHandler(TreeItem.branchCollapsedEvent(), Event::consume);
         tvJsonSchema.setCellFactory(tv -> new NamedSchemaTreeCell());
         tvJsonSchema.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
@@ -265,10 +260,17 @@ public class Main {
     private void loadJsonSchemaIntoTree() {
         JsonSchemaHelper.Schema schema = DataHelper.buildJsonSchema(loadedJson);
         TreeItem<NamedSchema> rootItem = toTreeItem("", schema);
-        if (rootItem != null) {
-            rootItem.setExpanded(true);
-        }
         tvJsonSchema.setRoot(rootItem);
+        if (rootItem != null) {
+            expandAll(rootItem);
+        }
+    }
+
+    private void expandAll(TreeItem<?> root) {
+        root.setExpanded(true);
+        for (TreeItem<?> child : root.getChildren()) {
+            expandAll(child);
+        }
     }
 
     private TreeItem<NamedSchema> toTreeItem(String name, JsonSchemaHelper.Schema schema) {
