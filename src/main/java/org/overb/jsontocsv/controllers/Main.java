@@ -17,11 +17,13 @@ import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import javafx.util.Callback;
 import org.overb.jsontocsv.dto.CsvColumnDefinition;
+import org.overb.jsontocsv.dto.JsonDragNode;
 import org.overb.jsontocsv.dto.NamedSchema;
 import org.overb.jsontocsv.elements.NamedSchemaTreeCell;
 import org.overb.jsontocsv.elements.ReorderableRowFactory;
 import org.overb.jsontocsv.enums.ColumnTypes;
 import org.overb.jsontocsv.enums.FileDialogTypes;
+import org.overb.jsontocsv.libs.CustomStringUtils;
 import org.overb.jsontocsv.libs.JsonSchemaHelper;
 import org.overb.jsontocsv.libs.UiHelper;
 import org.overb.jsontocsv.libs.DataHelper;
@@ -102,11 +104,10 @@ public class Main {
             if (selected.isEmpty()) return;
             Dragboard db = tvJsonSchema.startDragAndDrop(TransferMode.COPY);
             ClipboardContent content = new ClipboardContent();
-            List<String> names = selected.stream()
-                    .filter(item -> item.getValue().schema() instanceof JsonSchemaHelper.PrimitiveSchema)
-                    .map(item -> item.getValue().name())
-                    .collect(Collectors.toList());
-            content.put(NAMED_SCHEMA_LIST, names);
+            List<JsonDragNode> selection = selected.stream()
+                    .map(item -> JsonDragNode.of(item.getValue().name(), item.getValue().schema().getClass().getSimpleName(), buildFullTreePath(item)))
+                    .toList();
+            content.put(NAMED_SCHEMA_LIST, selection);
             db.setContent(content);
             evt.consume();
         });
@@ -118,30 +119,72 @@ public class Main {
         });
         columnDefinitionsTable.setOnDragDropped(evt -> {
             Dragboard db = evt.getDragboard();
-            boolean success = false;
-            if (db.hasContent(NAMED_SCHEMA_LIST)) {
-                @SuppressWarnings("unchecked")
-                List<String> names = (List<String>) db.getContent(NAMED_SCHEMA_LIST);
-                ObservableList<CsvColumnDefinition> items = columnDefinitionsTable.getItems();
-                for (String baseName : names) {
-                    String csvName = baseName;
-                    Set<String> existing = items.stream()
-                            .map(CsvColumnDefinition::getCsvColumn)
-                            .collect(Collectors.toSet());
-                    if (existing.contains(csvName)) {
-                        csvName = csvName + "_" + UUID.randomUUID();
-                    }
-                    CsvColumnDefinition def = new CsvColumnDefinition();
-                    def.setCsvColumn(csvName);
-                    def.setJsonColumn(baseName);
-                    def.setType(ColumnTypes.DEFAULT);
-                    items.add(def);
-                }
-                success = true;
+            if (!db.hasContent(NAMED_SCHEMA_LIST)) {
+                evt.setDropCompleted(false);
+                evt.consume();
             }
-            evt.setDropCompleted(success);
+            @SuppressWarnings("unchecked")
+            List<JsonDragNode> items = ((List<JsonDragNode>) db.getContent(NAMED_SCHEMA_LIST))
+                    .stream().filter(item -> item.schemaClass().equals(JsonSchemaHelper.PrimitiveSchema.class.getSimpleName()))
+                    .toList();
+            if (items.isEmpty()) {
+                evt.setDropCompleted(false);
+                evt.consume();
+            }
+            ObservableList<CsvColumnDefinition> csvDefinitions = columnDefinitionsTable.getItems();
+            for (JsonDragNode item : items) {
+                String csvName = CustomStringUtils.generateColumnName(item.node());
+                Set<String> existing = csvDefinitions.stream()
+                        .map(CsvColumnDefinition::getCsvColumn)
+                        .collect(Collectors.toSet());
+                if (existing.contains(csvName)) {
+                    csvName = csvName + "_" + UUID.randomUUID();
+                }
+                CsvColumnDefinition def = new CsvColumnDefinition();
+                def.setCsvColumn(csvName);
+                def.setJsonColumn(item.node());
+                def.setType(ColumnTypes.DEFAULT);
+                csvDefinitions.add(def);
+            }
+            evt.setDropCompleted(true);
             evt.consume();
         });
+        txtRoot.setOnDragOver(evt -> {
+            if (evt.getGestureSource() == tvJsonSchema && evt.getDragboard().hasContent(NAMED_SCHEMA_LIST)) {
+                evt.acceptTransferModes(TransferMode.COPY);
+            }
+            evt.consume();
+        });
+        txtRoot.setOnDragDropped(evt -> {
+            Dragboard db = evt.getDragboard();
+            if (!db.hasContent(NAMED_SCHEMA_LIST)) {
+                evt.setDropCompleted(false);
+                evt.consume();
+            }
+            @SuppressWarnings("unchecked")
+            List<JsonDragNode> items = ((List<JsonDragNode>) db.getContent(NAMED_SCHEMA_LIST))
+                    .stream().filter(item -> item.schemaClass().equals(JsonSchemaHelper.ArraySchema.class.getSimpleName()))
+                    .toList();
+            if (items.isEmpty()) {
+                evt.setDropCompleted(false);
+                evt.consume();
+            }
+            txtRoot.setText(items.getFirst().fullPath());
+            generateCsvPreview();
+            evt.setDropCompleted(true);
+            evt.consume();
+        });
+    }
+
+    private String buildFullTreePath(TreeItem<NamedSchema> item) {
+        List<String> parts = new ArrayList<>();
+        TreeItem<NamedSchema> ti = item;
+        while (ti != null && ti.getValue() != null && ti.getParent() != null) {
+            parts.add(ti.getValue().name());
+            ti = ti.getParent();
+        }
+        Collections.reverse(parts);
+        return String.join(".", parts);
     }
 
     private void editColumnDefinition(MouseEvent evt, TableRow<CsvColumnDefinition> row) {
@@ -252,7 +295,7 @@ public class Main {
             }
         }
         for (String columnName : columns) {
-            csvColumnDefinitions.add(new CsvColumnDefinition(columnName, columnName, ColumnTypes.DEFAULT));
+            csvColumnDefinitions.add(new CsvColumnDefinition(CustomStringUtils.generateColumnName(columnName), columnName, ColumnTypes.DEFAULT));
         }
     }
 
