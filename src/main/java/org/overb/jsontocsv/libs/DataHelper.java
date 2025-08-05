@@ -81,17 +81,15 @@ public class DataHelper {
         return new JsonSchemaHelper.PrimitiveSchema();
     }
 
-    public static ObservableList<Map<String, String>> previewCsvRows(JsonNode json, String rootPath, List<CsvColumnDefinition> definitions, int limit) {
+    public static ObservableList<Map<String, String>> previewCsvRows(JsonNode loadedJson, String rootPath, List<CsvColumnDefinition> definitions, int limit) {
         ObservableList<Map<String, String>> rows = FXCollections.observableArrayList();
         if (definitions == null || definitions.isEmpty()) {
             return rows;
         }
-        JsonNode root = navigate(json, rootPath);
-        List<JsonNode> records = root.isArray()
-                ? StreamSupport.stream(root.spliterator(), false).toList()
-                : Collections.singletonList(root);
+        JsonNode root = navigate(loadedJson, rootPath);
+        List<JsonNode> records = root.isArray() ? StreamSupport.stream(root.spliterator(), false).toList() : Collections.singletonList(root);
         for (JsonNode record : records) {
-            List<Map<String, String>> expanded = expandRecord(json, record, definitions);
+            List<Map<String, String>> expanded = expandRecord(loadedJson, record, definitions);
             rows.addAll(expanded);
             if (limit > 0 && rows.size() >= limit) {
                 break;
@@ -110,23 +108,23 @@ public class DataHelper {
         return node;
     }
 
-    private static List<Map<String, String>> expandRecord(JsonNode rootJson, JsonNode record, List<CsvColumnDefinition> definitions) {
+    private static List<Map<String, String>> expandRecord(JsonNode loadedJson, JsonNode record, List<CsvColumnDefinition> definitions) {
         List<Map<String, String>> contexts = new ArrayList<>();
         contexts.add(new HashMap<>());
         for (CsvColumnDefinition definition : definitions) {
             contexts = contexts.stream()
-                    .flatMap(ctx -> expandField(ctx, rootJson, record, definition).stream())
+                    .flatMap(context -> expandField(context, loadedJson, record, definition).stream())
                     .toList();
         }
         return contexts;
     }
 
-    private static List<Map<String, String>> expandField(Map<String, String> base, JsonNode rootJson, JsonNode record, CsvColumnDefinition columnDefinition) {
+    private static List<Map<String, String>> expandField(Map<String, String> base, JsonNode loadedJson, JsonNode record, CsvColumnDefinition columnDefinition) {
         List<JsonNode> found = findNodesByPath(record, columnDefinition.getJsonColumn());
         return switch (columnDefinition.getType()) {
             case LITERAL ->
                     List.of(FunctionsHelper.putValue(base, columnDefinition.getCsvColumn(), columnDefinition.getJsonColumn()));
-            case FORMULA -> FunctionsHelper.evaluateFunction(base, rootJson, record, columnDefinition);
+            case FORMULA -> FunctionsHelper.evaluateFunction(base, loadedJson, columnDefinition);
             default -> {
                 if (found.isEmpty()) {
                     yield List.of(FunctionsHelper.putValue(base, columnDefinition.getCsvColumn(), null));
