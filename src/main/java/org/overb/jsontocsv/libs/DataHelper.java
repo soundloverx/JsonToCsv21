@@ -16,8 +16,6 @@ import java.util.stream.StreamSupport;
 
 public class DataHelper {
 
-    private static final DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
     public static JsonNode loadJsonFile(File file) throws Exception {
         JsonNode rootNode = null;
         String content = Files.readString(file.toPath(), StandardCharsets.UTF_8);
