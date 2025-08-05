@@ -23,9 +23,9 @@ import org.overb.jsontocsv.elements.ReorderableRowFactory;
 import org.overb.jsontocsv.enums.ColumnTypes;
 import org.overb.jsontocsv.enums.FileDialogTypes;
 import org.overb.jsontocsv.libs.CustomStringUtils;
+import org.overb.jsontocsv.libs.DataHelper;
 import org.overb.jsontocsv.libs.JsonSchemaHelper;
 import org.overb.jsontocsv.libs.UiHelper;
-import org.overb.jsontocsv.libs.DataHelper;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -262,12 +262,13 @@ public class Main {
         JsonSchemaHelper.Schema schema = DataHelper.buildJsonSchema(loadedJson);
         TreeItem<NamedSchema> rootItem = toTreeItem("", schema);
         tvJsonSchema.setRoot(rootItem);
-        if (rootItem != null) {
-            expandAll(rootItem);
-        }
+        expandAll(rootItem);
     }
 
     private void expandAll(TreeItem<?> root) {
+        if (root == null) {
+            return;
+        }
         root.setExpanded(true);
         for (TreeItem<?> child : root.getChildren()) {
             expandAll(child);
