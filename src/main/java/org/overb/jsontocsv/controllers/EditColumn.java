@@ -55,7 +55,7 @@ public class EditColumn {
             dialogStage.close();
             return;
         }
-        if (Preferences.applicationProperties.isSnakeCaseColumnNames()) {
+        if (Preferences.applicationProperties.isColumnsSnakeCase()) {
             name = CustomStringUtils.generateColumnName(name);
             nameField.setText(name);
         }

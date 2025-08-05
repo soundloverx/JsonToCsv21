@@ -19,14 +19,17 @@ public class ApplicationProperties {
 
     private static final ObjectMapper MAPPER = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
 
-    @JsonProperty("snakeCaseColumnNames")
-    private boolean snakeCaseColumnNames;
+    @JsonProperty("auto_convert_on_load")
+    private boolean autoConvertOnLoad;
 
-    @JsonProperty("usePreviewRowLimit")
-    private boolean usePreviewRowLimit;
+    @JsonProperty("csv_columns_snake_case")
+    private boolean columnsSnakeCase;
 
-    @JsonProperty("previewRowLimit")
-    private int previewRowLimit;
+    @JsonProperty("use_limit_preview_rows")
+    private boolean limitedPreviewRows;
+
+    @JsonProperty("limit_preview_rows")
+    private int previewLimit;
 
     public void save() throws IOException {
         Path file = getConfigPath();
@@ -53,9 +56,10 @@ public class ApplicationProperties {
         } catch (IOException e) {
         }
         ApplicationProperties defaultProperties = new ApplicationProperties();
-        defaultProperties.setSnakeCaseColumnNames(true);
-        defaultProperties.setUsePreviewRowLimit(true);
-        defaultProperties.setPreviewRowLimit(100);
+        defaultProperties.setAutoConvertOnLoad(true);
+        defaultProperties.setColumnsSnakeCase(true);
+        defaultProperties.setLimitedPreviewRows(true);
+        defaultProperties.setPreviewLimit(100);
         return defaultProperties;
     }
 }

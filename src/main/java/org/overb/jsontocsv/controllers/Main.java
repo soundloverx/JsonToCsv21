@@ -7,7 +7,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTableCell;
@@ -135,7 +134,7 @@ public class Main {
             ObservableList<CsvColumnDefinition> csvDefinitions = columnDefinitionsTable.getItems();
             for (JsonDragNode item : items) {
                 String csvColumn = item.node();
-                if (Preferences.applicationProperties.isSnakeCaseColumnNames()) {
+                if (Preferences.applicationProperties.isColumnsSnakeCase()) {
                     csvColumn = CustomStringUtils.generateColumnName(item.node());
                 }
 
@@ -226,7 +225,9 @@ public class Main {
             resetEverything();
             loadedJson = DataHelper.loadJsonFile(file);
             loadJsonSchemaIntoTree();
-            parseJsonIntoCsvColumns(loadedJson);
+            if (Preferences.applicationProperties.isAutoConvertOnLoad()) {
+                parseJsonIntoCsvColumns(loadedJson);
+            }
         } catch (Exception error) {
             UiHelper.errorBox(window, error);
         }
@@ -309,7 +310,7 @@ public class Main {
         }
         for (String columnName : columns) {
             String csvColumn = columnName;
-            if (Preferences.applicationProperties.isSnakeCaseColumnNames()) {
+            if (Preferences.applicationProperties.isColumnsSnakeCase()) {
                 csvColumn = CustomStringUtils.generateColumnName(columnName);
             }
             csvColumnDefinitions.add(new CsvColumnDefinition(csvColumn, columnName, ColumnTypes.DEFAULT));
@@ -329,8 +330,8 @@ public class Main {
             csvTableView.getColumns().add(col);
         }
         try {
-            int limit = Preferences.applicationProperties.getPreviewRowLimit();
-            if (!Preferences.applicationProperties.isUsePreviewRowLimit()) {
+            int limit = Preferences.applicationProperties.getPreviewLimit();
+            if (!Preferences.applicationProperties.isLimitedPreviewRows()) {
                 limit = 0;
             }
             csvTableView.setItems(DataHelper.previewCsvRows(loadedJson, txtRoot.getText(), csvColumnDefinitions, limit));

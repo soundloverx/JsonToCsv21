@@ -21,14 +21,17 @@ public class Preferences {
     public CheckBox cbLimitPreview;
     @FXML
     public CheckBox cbSnakeCase;
+    @FXML
+    public CheckBox cbAutoConvert;
     private Stage dialogStage;
     private Window window;
 
     public void initialize() {
-        cbSnakeCase.setSelected(applicationProperties.isSnakeCaseColumnNames());
-        cbLimitPreview.setSelected(applicationProperties.isUsePreviewRowLimit());
+        cbAutoConvert.setSelected(applicationProperties.isAutoConvertOnLoad());
+        cbSnakeCase.setSelected(applicationProperties.isColumnsSnakeCase());
+        cbLimitPreview.setSelected(applicationProperties.isLimitedPreviewRows());
         txtLimit.setDisable(!cbLimitPreview.isSelected());
-        txtLimit.setText("" + applicationProperties.getPreviewRowLimit());
+        txtLimit.setText("" + applicationProperties.getPreviewLimit());
 
         cbLimitPreview.setOnAction(event -> {
             txtLimit.setDisable(!cbLimitPreview.isSelected());
@@ -43,8 +46,9 @@ public class Preferences {
     @FXML
     private void onOk() {
         try {
-            applicationProperties.setSnakeCaseColumnNames(cbSnakeCase.isSelected());
-            applicationProperties.setUsePreviewRowLimit(cbLimitPreview.isSelected());
+            applicationProperties.setAutoConvertOnLoad(cbAutoConvert.isSelected());
+            applicationProperties.setColumnsSnakeCase(cbSnakeCase.isSelected());
+            applicationProperties.setLimitedPreviewRows(cbLimitPreview.isSelected());
             int limit;
             try {
                 limit = Integer.parseInt(txtLimit.getText());
@@ -52,7 +56,7 @@ public class Preferences {
                 limit = 100;
                 txtLimit.setText("100");
             }
-            applicationProperties.setPreviewRowLimit(limit);
+            applicationProperties.setPreviewLimit(limit);
             applicationProperties.save();
         } catch (Exception error) {
             UiHelper.errorBox(window, error);
