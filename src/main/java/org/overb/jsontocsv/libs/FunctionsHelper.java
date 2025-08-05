@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.overb.jsontocsv.dto.CsvColumnDefinition;
+import org.overb.jsontocsv.enums.CustomFunctions;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -36,14 +37,16 @@ public class FunctionsHelper {
         } else {
             args = functionArguments.split("\\s*,\\s*");
         }
-        switch (functionName) {
-            case "FIND":
-                return List.of(putValue(base, columnDefinition.getCsvColumn(), doFind(base, rootJson, args)));
-            case "CURRENT_TIMESTAMP":
-                return List.of(putValue(base, columnDefinition.getCsvColumn(), doCurrentTimestamp()));
-            default:
-                return List.of(putValue(base, columnDefinition.getCsvColumn(), "UNKNOWN FORMULA: " + formula));
+        CustomFunctions function = CustomFunctions.fromName(functionName);
+        if (function.getParameters() != args.length) {
+            return List.of(putValue(base, columnDefinition.getCsvColumn(), "ERROR: Wrong number of arguments for " + functionName.toUpperCase()));
         }
+        return switch (function) {
+            case FIND -> List.of(putValue(base, columnDefinition.getCsvColumn(), doFind(base, rootJson, args)));
+            case CURRENT_TIMESTAMP -> List.of(putValue(base, columnDefinition.getCsvColumn(), doCurrentTimestamp()));
+            default ->
+                    List.of(putValue(base, columnDefinition.getCsvColumn(), "UNKNOWN FUNCTION: " + functionName.toUpperCase()));
+        };
     }
 
     static Map<String, String> putValue(Map<String, String> original, String key, String value) {
@@ -57,9 +60,6 @@ public class FunctionsHelper {
     }
 
     private static String doFind(Map<String, String> base, JsonNode rootJson, String[] args) {
-        if (args.length != 3) {
-            return "ERROR: Wrong number of arguments for FIND(valueKey, pathToLookInto, fieldToReturn)";
-        }
         String valueKey = args[0].trim();
         String lookupFullPath = args[1].trim();
         String returnField = args[2].trim();
@@ -70,23 +70,21 @@ public class FunctionsHelper {
         String parentPath = String.join(".", Arrays.copyOf(pathSegments, pathSegments.length - 1));
         JsonNode parentNode = parentPath.isBlank() ? rootJson : DataHelper.navigate(rootJson, parentPath);
 
+        final Iterable<JsonNode> nodesToCheck;
         if (parentNode.isArray()) {
-            for (JsonNode elem : parentNode) {
-                JsonNode compareNode = elem.path(compareField);
-                if (compareNode.isMissingNode()) {
-                    return null;
-                }
-                if ((compareNode.isNull() && searchValue == null) || (compareNode.isValueNode() && compareNode.asText().equals(searchValue))) {
-                    return elem.path(returnField).asText(null);
-                }
-            }
+            nodesToCheck = parentNode;
         } else if (parentNode.isObject()) {
-            JsonNode compareNode = parentNode.path(compareField);
+            nodesToCheck = Collections.singleton(parentNode);
+        } else {
+            return null;
+        }
+        for (JsonNode node : nodesToCheck) {
+            JsonNode compareNode = node.path(compareField);
             if (compareNode.isMissingNode()) {
                 return null;
             }
             if ((compareNode.isNull() && searchValue == null) || (compareNode.isValueNode() && compareNode.asText().equals(searchValue))) {
-                return parentNode.path(returnField).asText(null);
+                return node.path(returnField).asText(null);
             }
         }
         return null;
