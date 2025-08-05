@@ -1,28 +1,20 @@
 package org.overb.jsontocsv.libs;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import org.overb.jsontocsv.dto.CsvColumnDefinition;
 import org.overb.jsontocsv.enums.CustomFunctions;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public class FunctionsHelper {
 
     private static final DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    static List<Map<String, String>> evaluateFunction(Map<String, String> base, JsonNode loadedJson, CsvColumnDefinition columnDefinition) {
+    static List<Map<String, String>> evaluateFormula(Map<String, String> base, JsonNode loadedJson, CsvColumnDefinition columnDefinition) {
         final Pattern FUNCTION_PATTERN = Pattern.compile("\\s*(\\w+)\\s*\\(\\s*([^)]*)\\s*\\)\\s*");
         String formula = columnDefinition.getJsonColumn();
         Matcher m = FUNCTION_PATTERN.matcher(formula);

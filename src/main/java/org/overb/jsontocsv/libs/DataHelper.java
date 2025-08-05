@@ -9,11 +9,8 @@ import org.overb.jsontocsv.dto.CsvColumnDefinition;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -124,7 +121,7 @@ public class DataHelper {
         return switch (columnDefinition.getType()) {
             case LITERAL ->
                     List.of(FunctionsHelper.putValue(base, columnDefinition.getCsvColumn(), columnDefinition.getJsonColumn()));
-            case FORMULA -> FunctionsHelper.evaluateFunction(base, loadedJson, columnDefinition);
+            case FORMULA -> FunctionsHelper.evaluateFormula(base, loadedJson, columnDefinition);
             default -> {
                 if (found.isEmpty()) {
                     yield List.of(FunctionsHelper.putValue(base, columnDefinition.getCsvColumn(), null));
