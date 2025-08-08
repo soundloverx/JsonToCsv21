@@ -22,10 +22,7 @@ import org.overb.jsontocsv.elements.NamedSchemaTreeCell;
 import org.overb.jsontocsv.elements.ReorderableRowFactory;
 import org.overb.jsontocsv.enums.ColumnTypes;
 import org.overb.jsontocsv.enums.FileDialogTypes;
-import org.overb.jsontocsv.libs.CustomStringUtils;
-import org.overb.jsontocsv.libs.DataHelper;
-import org.overb.jsontocsv.libs.JsonSchemaHelper;
-import org.overb.jsontocsv.libs.UiHelper;
+import org.overb.jsontocsv.libs.*;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -223,7 +220,7 @@ public class Main {
         if (file == null) return;
         try {
             resetEverything();
-            loadedJson = DataHelper.loadJsonFile(file);
+            loadedJson = JsonIo.loadJsonFile(file);
             loadJsonSchemaIntoTree();
             if (Preferences.applicationProperties.isAutoConvertOnLoad()) {
                 parseJsonIntoCsvColumns(loadedJson);
@@ -241,25 +238,20 @@ public class Main {
         }
         File file = UiHelper.openFileChooser(window, FileDialogTypes.SAVE, "SAVE CSV", new FileChooser.ExtensionFilter("CSV Files (*.csv)", "*.csv"));
         if (file == null) return;
-        List<Map<String, String>> data = DataHelper.previewCsvRows(loadedJson, txtRoot.getText(), csvColumnDefinitions, 0);
+
+        List<String> headers = csvColumnDefinitions.stream()
+                .map(CsvColumnDefinition::getCsvColumn)
+                .toList();
         try (CSVWriter writer = new CSVWriter(new FileWriter(file))) {
-            Map<String, String> firstRow = data.get(0);
-            List<String> headers = new ArrayList<>(firstRow.keySet());
             writer.writeNext(headers.toArray(new String[0]));
-            for (Map<String, String> row : data) {
-                String[] line = new String[headers.size()];
-                for (int i = 0; i < headers.size(); i++) {
-                    line[i] = row.getOrDefault(headers.get(i), "");
-                }
-                writer.writeNext(line);
-            }
+            CsvRowExpander.streamCsvRows(loadedJson, txtRoot.getText(), csvColumnDefinitions, headers, writer::writeNext);
         } catch (Exception error) {
             UiHelper.errorBox(window, error);
         }
     }
 
     private void loadJsonSchemaIntoTree() {
-        JsonSchemaHelper.Schema schema = DataHelper.buildJsonSchema(loadedJson);
+        JsonSchemaHelper.Schema schema = JsonSchemaService.buildJsonSchema(loadedJson);
         TreeItem<NamedSchema> rootItem = toTreeItem("", schema);
         tvJsonSchema.setRoot(rootItem);
         expandAll(rootItem);
@@ -293,11 +285,10 @@ public class Main {
     }
 
     private void parseJsonIntoCsvColumns(JsonNode rootNode) throws Exception {
-        boolean isNested = DataHelper.getJsonDepth(rootNode) > 1;
-        if (isNested) {
-            UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info", "You have loaded a nested JSON.\nYou have to manually configure the CSV columns.\nRemember to fill in the root node name.");
-        } else if (rootNode.isArray() && !rootNode.isEmpty()) {
+        if (JsonSchemaService.isShallow(rootNode)) {
             loadSimpleJson(rootNode);
+        } else if (rootNode.isArray() && !rootNode.isEmpty()) {
+            UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info", "You have loaded a nested JSON.\nYou have to manually configure the CSV columns.\nRemember to fill in the root node name.");
         }
     }
 
@@ -335,7 +326,7 @@ public class Main {
             if (!Preferences.applicationProperties.isLimitedPreviewRows()) {
                 limit = 0;
             }
-            csvTableView.setItems(DataHelper.previewCsvRows(loadedJson, txtRoot.getText(), csvColumnDefinitions, limit));
+            csvTableView.setItems(CsvRowExpander.previewCsvRows(loadedJson, txtRoot.getText(), csvColumnDefinitions, limit));
         } catch (Exception e) {
             UiHelper.errorBox(window, e);
         }

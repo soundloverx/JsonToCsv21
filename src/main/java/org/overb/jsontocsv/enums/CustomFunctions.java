@@ -6,6 +6,7 @@ public enum CustomFunctions {
     CURRENT_TIMESTAMP("current_timestamp", 0),
     FIND("find", 3),
     CONCAT("concat", -1),
+    JSON("json", 1),
     UNKNOWN("unknown", 0);
 
     @Getter
