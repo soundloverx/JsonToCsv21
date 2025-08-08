@@ -1,0 +1,69 @@
+<html>
+<style>
+    table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+    }
+</style>
+<body>
+<table>
+    <tr>
+        <th>Function</th>
+        <th>Description</th>
+    </tr>
+    <tr>
+        <td>
+            <pre>CURRENT_TIMESTAMP</pre>
+        </td>
+        <td>
+            <pre>
+Definition: CURRENT_TIMESTAMP()
+
+Example: CURRENT_TIMESTAMP()
+            </pre>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <pre>FIND</pre>
+        </td>
+        <td>
+            <pre>
+Definition: FIND(csv_column, json_path, json_element)
+    - csv_column = CSV column which value is referenced
+    - json_path = full path to the element whose value we are comparing to
+    - json_element = the key of the element whose value will be returned. This will not be a full path, as it should be contained in the same object the json_path is pointing to
+
+Example: FIND(appid, results.app_info.appid, app_name)
+            </pre>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <pre>CONCAT</pre>
+        </td>
+        <td>
+            <pre>
+Definition: CONCAT(csv_column or literal ...)
+The function supports any number of arguments.
+
+Example: CONCAT(appid, ' - ', app_name)
+            </pre>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <pre>JSON</pre>
+        </td>
+        <td>
+            <pre>
+Definition: JSON(json_path)
+Returns the full JSON object pointed by the json_path.
+
+Example: JSON(results.app_info)
+            </pre>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

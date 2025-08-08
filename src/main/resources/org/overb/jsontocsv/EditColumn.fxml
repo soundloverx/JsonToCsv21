@@ -7,60 +7,68 @@
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
 
-<VBox prefHeight="191.0" prefWidth="396.0" spacing="5.0" xmlns="http://javafx.com/javafx/21.0.8"
-      xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.overb.jsontocsv.controllers.EditColumn">
+<VBox prefHeight="191.0" prefWidth="396.0" spacing="5.0" xmlns="http://javafx.com/javafx/21.0.8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.overb.jsontocsv.controllers.EditColumn">
 
     <GridPane hgap="5.0" vgap="5.0" VBox.vgrow="ALWAYS">
-        <Label text="Column name:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-        <TextField fx:id="nameField" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="0"/>
-        <Label text="Type:" GridPane.rowIndex="1"/>
+        <Label text="Column name:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+        <TextField fx:id="nameField" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" />
+        <Label text="Type:" GridPane.rowIndex="1" />
         <HBox spacing="10.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
             <children>
                 <RadioButton fx:id="rbDefault" mnemonicParsing="false" selected="true" text="Default">
                     <toggleGroup>
-                        <ToggleGroup fx:id="toggleTypeGroup"/>
+                        <ToggleGroup fx:id="toggleTypeGroup" />
                     </toggleGroup>
                 </RadioButton>
-                <RadioButton fx:id="rbLiteral" mnemonicParsing="false" text="Literal" toggleGroup="$toggleTypeGroup"/>
-                <RadioButton fx:id="rbFormula" mnemonicParsing="false" text="Formula" toggleGroup="$toggleTypeGroup"/>
+                <RadioButton fx:id="rbLiteral" mnemonicParsing="false" text="Literal" toggleGroup="$toggleTypeGroup" />
+                <RadioButton fx:id="rbFormula" mnemonicParsing="false" text="Formula" toggleGroup="$toggleTypeGroup" />
+                <Button fx:id="helpButton" maxHeight="20.0" minHeight="20.0" onAction="#onHelp" prefHeight="20.0" text="?" GridPane.columnIndex="2" GridPane.rowIndex="1" HBox.hgrow="NEVER">
+                    <tooltip>
+                        <Tooltip text="Open formulas documentation" />
+                    </tooltip>
+               <font>
+                  <Font size="10.0" />
+               </font>
+                </Button>
             </children>
             <padding>
-                <Insets right="5.0"/>
+                <Insets right="5.0" />
             </padding>
         </HBox>
 
-        <Label alignment="TOP_LEFT" text="JSON source:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-        <TextArea fx:id="pathField" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="2"
-                  GridPane.vgrow="ALWAYS"/>
+        <Label alignment="TOP_LEFT" text="JSON source:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+        <TextArea fx:id="pathField" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="2" GridPane.vgrow="ALWAYS" />
         <columnConstraints>
-            <ColumnConstraints halignment="LEFT" hgrow="NEVER" minWidth="100.0"/>
-            <ColumnConstraints/>
-            <ColumnConstraints minWidth="10.0" prefWidth="100.0"/>
+            <ColumnConstraints halignment="LEFT" hgrow="NEVER" minWidth="100.0" />
+            <ColumnConstraints />
+            <ColumnConstraints minWidth="10.0" prefWidth="100.0" />
         </columnConstraints>
         <rowConstraints>
-            <RowConstraints/>
-            <RowConstraints/>
-            <RowConstraints minHeight="10.0" prefHeight="30.0"/>
+            <RowConstraints />
+            <RowConstraints />
+            <RowConstraints minHeight="10.0" prefHeight="30.0" />
         </rowConstraints>
         <VBox.margin>
-            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
         </VBox.margin>
     </GridPane>
 
     <HBox alignment="CENTER_RIGHT" prefHeight="18.0" prefWidth="386.0" spacing="5.0">
-        <Button onAction="#onCancel" text="Cancel"/>
-        <Button onAction="#onOk" text="OK"/>
+        <Button onAction="#onCancel" text="Cancel" />
+        <Button onAction="#onOk" text="OK" />
         <VBox.margin>
-            <Insets bottom="3.0" left="3.0" right="3.0" top="3.0"/>
+            <Insets bottom="3.0" left="3.0" right="3.0" top="3.0" />
         </VBox.margin>
     </HBox>
     <padding>
-        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
     </padding>
 </VBox>

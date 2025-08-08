@@ -3,6 +3,9 @@ package org.overb.jsontocsv.controllers;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.scene.Scene;
@@ -15,6 +18,13 @@ import org.overb.jsontocsv.dto.CsvColumnDefinition;
 import org.overb.jsontocsv.enums.ColumnTypes;
 import org.overb.jsontocsv.libs.CustomStringUtils;
 import org.overb.jsontocsv.libs.UiHelper;
+
+import java.awt.*;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 public class EditColumn {
     @FXML
@@ -29,6 +39,8 @@ public class EditColumn {
     private RadioButton rbLiteral;
     @FXML
     private RadioButton rbFormula;
+    @FXML
+    private Button helpButton;
 
     private Stage dialogStage;
     private Window window;
@@ -46,6 +58,29 @@ public class EditColumn {
                 this.window = newValue.getWindow();
             }
         });
+    }
+
+    @FXML
+    private void onHelp() {
+        try {
+            URL resource = App.class.getResource("/formulas.html");
+            if (resource == null) {
+                UiHelper.messageBox(window, Alert.AlertType.ERROR, "Error", "Could not find formulas.html in resources.");
+                return;
+            }
+            if ("file".equalsIgnoreCase(resource.getProtocol())) {
+                Desktop.getDesktop().browse(resource.toURI());
+                return;
+            }
+            Path tmp = Files.createTempFile("formulas", ".html");
+            tmp.toFile().deleteOnExit();
+            try (InputStream in = resource.openStream()) {
+                Files.copy(in, tmp, StandardCopyOption.REPLACE_EXISTING);
+            }
+            Desktop.getDesktop().browse(tmp.toUri());
+        } catch (Exception ex) {
+            UiHelper.errorBox(window, ex);
+        }
     }
 
     @FXML
