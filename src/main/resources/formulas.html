@@ -1,69 +1,97 @@
 <html>
-<style>
-    table, th, td {
-        border: 1px solid black;
-        border-collapse: collapse;
-    }
-</style>
+<head>
+    <meta charset="UTF-8">
+    <title>Supported Custom Functions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        table, th, td {
+            border: 1px solid #333;
+        }
+
+        th, td {
+            padding: 8px 10px;
+            vertical-align: top;
+        }
+
+        th {
+            background: #f2f2f2;
+            text-align: left;
+        }
+
+        code, pre {
+            font-family: Consolas, "Courier New", monospace;
+        }
+
+        .note {
+            color: #555;
+            font-size: 0.95em;
+            padding-top: 5px;
+        }
+    </style>
+</head>
 <body>
+<h2>Supported Custom Functions</h2>
+
 <table>
     <tr>
         <th>Function</th>
         <th>Description</th>
+        <th>Example</th>
     </tr>
-    <tr>
-        <td>
-            <pre>CURRENT_TIMESTAMP</pre>
-        </td>
-        <td>
-            <pre>
-Definition: CURRENT_TIMESTAMP()
 
-Example: CURRENT_TIMESTAMP()
-            </pre>
+    <tr>
+        <td><code>CURRENT_TIMESTAMP()</code></td>
+        <td>
+            Returns the current date and time formatted as yyyy-MM-dd HH:mm:ss.
         </td>
+        <td><code>CURRENT_TIMESTAMP()</code></td>
     </tr>
-    <tr>
-        <td>
-            <pre>FIND</pre>
-        </td>
-        <td>
-            <pre>
-Definition: FIND(csv_column, json_path, json_element)
-    - csv_column = CSV column which value is referenced
-    - json_path = full path to the element whose value we are comparing to
-    - json_element = the key of the element whose value will be returned. This will not be a full path, as it should be contained in the same object the json_path is pointing to.
 
-Example: FIND(appid, results.app_info.appid, app_name)
-            </pre>
+    <tr>
+        <td><code>FIND(csv_column, json_path, json_element)</code></td>
+        <td>
+            Looks up a value in JSON and returns a field from the matching object.
+            <div class="note">
+                — csv_column: Name of a CSV column whose value is used for comparison.<br>
+                — json_path: Full path to the field to compare against (e.g., results.items.id).<br>
+                — json_element: Field name to return from the same object where the match is found.<br>
+                Returns the first matching value, or null if not found.
+            </div>
         </td>
+        <td><code>FIND(appid, results.app_info.appid, app_name)</code></td>
     </tr>
-    <tr>
-        <td>
-            <pre>CONCAT</pre>
-        </td>
-        <td>
-            <pre>
-Definition: CONCAT(csv_column or literal ...)
-The function supports any number of arguments.
 
-Example: CONCAT(appid, ' - ', app_name)
-            </pre>
+    <tr>
+        <td><code>CONCAT(arg1, arg2, ...)</code></td>
+        <td>
+            Concatenates multiple pieces into a single string. Arguments can be:
+            <div class="note">
+                — a CSV column name (its value is used; missing values become empty strings).<br>
+                — a single-quoted string literal (e.g., ' - ').
+            </div>
         </td>
+        <td><code>CONCAT(appid, ' - ', app_name)</code></td>
     </tr>
-    <tr>
-        <td>
-            <pre>JSON</pre>
-        </td>
-        <td>
-            <pre>
-Definition: JSON(json_path)
-Returns the full JSON object pointed by the json_path.
 
-Example: JSON(results.app_info)
-            </pre>
+    <tr>
+        <td><code>JSON(json_path)</code></td>
+        <td>
+            Returns the JSON at the specified path as a JSON string (object/array/value), or null if not found.
+            <div class="note">
+                — provide a valid path from the JSON root (e.g., results.app_info).
+            </div>
         </td>
+        <td><code>JSON(results.app_info)</code></td>
     </tr>
 </table>
+
 </body>
 </html>
