@@ -15,7 +15,7 @@ public class NamedSchemaTreeCell extends TreeCell<NamedSchema> {
         }
         String typeHint = switch (ns.schema()) {
             case JsonSchemaHelper.ObjectSchema o -> " {}";
-            case JsonSchemaHelper.ArraySchema a -> " []";
+            case JsonSchemaHelper.ArraySchema a -> " [" + (a.size() == null ? "" : a.size()) + "]";
             default -> "";
         };
         setText(ns.name() + typeHint);

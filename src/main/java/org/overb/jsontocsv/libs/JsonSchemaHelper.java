@@ -47,14 +47,32 @@ public class JsonSchemaHelper {
     public static final class ArraySchema implements Schema {
         public Schema elementSchema;
 
-        public ArraySchema(Schema first) {
+        private Integer itemsCount;
+
+        public ArraySchema(Schema first, Integer itemsCount) {
             this.elementSchema = first;
+            this.itemsCount = itemsCount;
+        }
+
+        public Integer size() {
+            return itemsCount;
+        }
+
+        public void setSize(Integer itemsCount) {
+            this.itemsCount = itemsCount;
         }
 
         @Override
         public Schema merge(Schema other) {
             if (other instanceof ArraySchema otherSchema) {
                 this.elementSchema = this.elementSchema.merge(otherSchema.elementSchema);
+                if (this.itemsCount != null && otherSchema.itemsCount != null) {
+                    if (!this.itemsCount.equals(otherSchema.itemsCount)) {
+                        this.itemsCount = null;
+                    }
+                } else if (this.itemsCount == null) {
+                    this.itemsCount = otherSchema.itemsCount;
+                }
             }
             return this;
         }
@@ -62,10 +80,14 @@ public class JsonSchemaHelper {
         @Override
         public JsonNode instantiate() {
             ArrayNode array = mapper.createArrayNode();
-            array.add(elementSchema.instantiate());
+            int count = (itemsCount != null && itemsCount > 0) ? itemsCount : 1;
+            for (int i = 0; i < count; i++) {
+                array.add(elementSchema.instantiate());
+            }
             return array;
         }
     }
+
 
     public static final class PrimitiveSchema implements Schema {
         @Override

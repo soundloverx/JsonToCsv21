@@ -68,7 +68,8 @@ public final class JsonSchemaService {
                 JsonSchemaHelper.Schema child = buildJsonSchema(element);
                 merged = merged == null ? child : merged.merge(child);
             }
-            return new JsonSchemaHelper.ArraySchema(merged != null ? merged : new JsonSchemaHelper.PrimitiveSchema());
+            JsonSchemaHelper.Schema elementSchema = (merged != null) ? merged : new JsonSchemaHelper.PrimitiveSchema();
+            return new JsonSchemaHelper.ArraySchema(elementSchema, array.size());
         }
         return new JsonSchemaHelper.PrimitiveSchema();
     }
