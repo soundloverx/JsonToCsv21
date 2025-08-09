@@ -61,10 +61,11 @@
                                                                             shift="UP" shortcut="UP"/>
                                                     </accelerator>
                                                 </MenuItem>
-                                                <MenuItem fx:id="mnuClearCsv" mnemonicParsing="false"
-                                                          onAction="#resetDefinitions" text="Clear all definitions"/>
-                                                <MenuItem fx:id="mnuClearEverything" mnemonicParsing="false"
-                                                          onAction="#resetEverything" text="Clear everything"/>
+                                                <SeparatorMenuItem />
+                                                <MenuItem fx:id="mnuResetDefinitions" mnemonicParsing="false"
+                                                          onAction="#resetDefinitions" text="Reset definitions"/>
+                                                <MenuItem fx:id="mnuResetAll" mnemonicParsing="false"
+                                                          onAction="#resetEverything" text="Reset all"/>
                                             </items>
                                         </Menu>
                                     </menus>

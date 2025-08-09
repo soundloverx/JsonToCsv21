@@ -73,7 +73,7 @@ public final class CsvRowExpander {
         List<CsvColumnDefinition> scalarFormulas = new ArrayList<>();
         for (CsvColumnDefinition def : definitions) {
             boolean isFormula = def.getType() == ColumnTypes.FORMULA;
-            String ancestor = JsonPath.findArrayAncestorPath(record, def.getJsonColumn());
+            String ancestor = JsonPath.findArrayAncestorPath(record, def.getJsonSource());
             if (ancestor == null) {
                 if (isFormula) scalarFormulas.add(def);
                 else scalars.add(def);
@@ -91,7 +91,7 @@ public final class CsvRowExpander {
             List<Map<String, String>> next = new ArrayList<>();
             for (Map<String, String> ctx : contexts) {
                 // Use the unified expander with the record as base and the absolute path
-                next.addAll(expandNonFormula(ctx, loadedJson, record, def, def.getJsonColumn()));
+                next.addAll(expandNonFormula(ctx, loadedJson, record, def, def.getJsonSource()));
             }
             contexts = next;
         }
@@ -129,7 +129,7 @@ public final class CsvRowExpander {
         if (!arrayNode.isArray() || arrayNode.isEmpty()) {
             Map<String, String> withNulls = new LinkedHashMap<>(ctx);
             for (CsvColumnDefinition def : nonFormulas) {
-                withNulls = FunctionsHelper.putValue(withNulls, def.getCsvColumn(), null);
+                withNulls = FunctionsHelper.putValue(withNulls, def.getColumnName(), null);
             }
             List<Map<String, String>> afterGroupList = applyFormulasAccum(withNulls, loadedJson, record, null, formulas);
             for (Map<String, String> nextCtx : afterGroupList) {
@@ -144,7 +144,7 @@ public final class CsvRowExpander {
             elementContexts.add(new LinkedHashMap<>(ctx));
 
             for (CsvColumnDefinition def : nonFormulas) {
-                String relPath = JsonPath.relativePath(def.getJsonColumn(), ancestorPath);
+                String relPath = JsonPath.relativePath(def.getJsonSource(), ancestorPath);
                 List<Map<String, String>> next = new ArrayList<>();
                 for (Map<String, String> ec : elementContexts) {
                     next.addAll(expandNonFormula(ec, loadedJson, element, def, relPath));
@@ -189,23 +189,23 @@ public final class CsvRowExpander {
         }
         // LITERAL stays the same
         if (columnDefinition.getType() == ColumnTypes.LITERAL) {
-            return List.of(FunctionsHelper.putValue(base, columnDefinition.getCsvColumn(), columnDefinition.getJsonColumn()));
+            return List.of(FunctionsHelper.putValue(base, columnDefinition.getColumnName(), columnDefinition.getJsonSource()));
         }
         // DEFAULT (and any non-formula custom type that resolves a path)
         List<JsonNode> found = JsonPath.findNodesByPath(baseNode, effectivePath);
         if (found.isEmpty()) {
-            return List.of(FunctionsHelper.putValue(base, columnDefinition.getCsvColumn(), null));
+            return List.of(FunctionsHelper.putValue(base, columnDefinition.getColumnName(), null));
         }
         List<Map<String, String>> out = new ArrayList<>(found.size());
         for (JsonNode n : found) {
-            out.add(FunctionsHelper.putValue(base, columnDefinition.getCsvColumn(), n.isValueNode() ? n.asText() : n.toString()));
+            out.add(FunctionsHelper.putValue(base, columnDefinition.getColumnName(), n.isValueNode() ? n.asText() : n.toString()));
         }
         return out;
     }
 
     public static List<String> headersFrom(List<CsvColumnDefinition> definitions) {
         List<String> headers = new ArrayList<>(definitions.size());
-        for (CsvColumnDefinition d : definitions) headers.add(d.getCsvColumn());
+        for (CsvColumnDefinition d : definitions) headers.add(d.getColumnName());
         return headers;
     }
 

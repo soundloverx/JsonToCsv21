@@ -18,10 +18,10 @@ public class FunctionsHelper {
                                                      CsvColumnDefinition columnDefinition,
                                                      JsonNode localBase) {
         final Pattern FUNCTION_PATTERN = Pattern.compile("\\s*(\\w+)\\s*\\(\\s*([^)]*)\\s*\\)\\s*");
-        String formula = columnDefinition.getJsonColumn();
+        String formula = columnDefinition.getJsonSource();
         Matcher m = FUNCTION_PATTERN.matcher(formula);
         if (!m.matches()) {
-            return List.of(putValue(base, columnDefinition.getCsvColumn(), "UNKNOWN FORMULA: " + formula));
+            return List.of(putValue(base, columnDefinition.getColumnName(), "UNKNOWN FORMULA: " + formula));
         }
         String functionName = m.group(1).toUpperCase();
         String functionArguments = m.group(2);
@@ -34,18 +34,18 @@ public class FunctionsHelper {
 
         CustomFunctions function = CustomFunctions.fromName(functionName);
         if (function.getParameters() != -1 && function.getParameters() != resolvedArgs.length) {
-            return List.of(putValue(base, columnDefinition.getCsvColumn(), "ERROR: Wrong number of arguments for " + functionName.toUpperCase()));
+            return List.of(putValue(base, columnDefinition.getColumnName(), "ERROR: Wrong number of arguments for " + functionName.toUpperCase()));
         }
 
         return switch (function) {
             case FIND ->
-                    List.of(putValue(base, columnDefinition.getCsvColumn(), doFind(base, loadedJson, resolvedArgs)));
-            case CURRENT_TIMESTAMP -> List.of(putValue(base, columnDefinition.getCsvColumn(), doCurrentTimestamp()));
-            case CONCAT -> List.of(putValue(base, columnDefinition.getCsvColumn(), doConcat(base, resolvedArgs)));
+                    List.of(putValue(base, columnDefinition.getColumnName(), doFind(base, loadedJson, resolvedArgs)));
+            case CURRENT_TIMESTAMP -> List.of(putValue(base, columnDefinition.getColumnName(), doCurrentTimestamp()));
+            case CONCAT -> List.of(putValue(base, columnDefinition.getColumnName(), doConcat(base, resolvedArgs)));
             case JSON ->
-                    List.of(putValue(base, columnDefinition.getCsvColumn(), doJson(loadedJson, localBase, rawArgs[0])));
+                    List.of(putValue(base, columnDefinition.getColumnName(), doJson(loadedJson, localBase, rawArgs[0])));
             default ->
-                    List.of(putValue(base, columnDefinition.getCsvColumn(), "UNKNOWN FUNCTION: " + functionName.toUpperCase()));
+                    List.of(putValue(base, columnDefinition.getColumnName(), "UNKNOWN FUNCTION: " + functionName.toUpperCase()));
         };
     }
 

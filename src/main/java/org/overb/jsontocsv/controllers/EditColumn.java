@@ -28,9 +28,9 @@ import java.nio.file.StandardCopyOption;
 
 public class EditColumn {
     @FXML
-    private TextField nameField;
+    private TextField txtColumnName;
     @FXML
-    private TextArea pathField;
+    private TextArea txtJsonSource;
     @FXML
     private ToggleGroup toggleTypeGroup;
     @FXML
@@ -53,7 +53,7 @@ public class EditColumn {
         rbLiteral.setUserData(ColumnTypes.LITERAL);
         rbFormula.setUserData(ColumnTypes.FORMULA);
 
-        nameField.sceneProperty().addListener((observable, oldValue, newValue) -> {
+        txtColumnName.sceneProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 this.window = newValue.getWindow();
             }
@@ -85,28 +85,28 @@ public class EditColumn {
 
     @FXML
     private void onOk() {
-        String name = nameField.getText().trim();
+        String name = txtColumnName.getText().trim();
         if (name.isEmpty()) {
             dialogStage.close();
             return;
         }
         if (Preferences.applicationProperties.isColumnsSnakeCase()) {
             name = CustomStringUtils.generateColumnName(name);
-            nameField.setText(name);
+            txtColumnName.setText(name);
         }
         for (CsvColumnDefinition definition : csvColumnDefinitions) {
-            if (definition.getCsvColumn().equals(name) && !definition.equals(definitionToEdit)) {
+            if (definition.getColumnName().equals(name) && !definition.equals(definitionToEdit)) {
                 UiHelper.messageBox(window, Alert.AlertType.ERROR, "Error", "The column name '" + name + "' already exists.");
                 return;
             }
         }
         ColumnTypes columnType = (ColumnTypes) toggleTypeGroup.getSelectedToggle().getUserData();
         if (definitionToEdit == null) {
-            csvColumnDefinitions.add(new CsvColumnDefinition(name, pathField.getText().trim(), columnType));
+            csvColumnDefinitions.add(new CsvColumnDefinition(name, txtJsonSource.getText().trim(), columnType));
         } else {
             definitionToEdit.setType(columnType);
-            definitionToEdit.setCsvColumn(name);
-            definitionToEdit.setJsonColumn(pathField.getText().trim());
+            definitionToEdit.setColumnName(name);
+            definitionToEdit.setJsonSource(txtJsonSource.getText().trim());
         }
         dialogStage.close();
     }
@@ -121,8 +121,8 @@ public class EditColumn {
             return;
         }
         this.definitionToEdit = definitionToEdit;
-        nameField.setText(definitionToEdit.getCsvColumn());
-        pathField.setText(definitionToEdit.getJsonColumn());
+        txtColumnName.setText(definitionToEdit.getColumnName());
+        txtJsonSource.setText(definitionToEdit.getJsonSource());
 
         switch (definitionToEdit.getType()) {
             case LITERAL -> rbLiteral.setSelected(true);

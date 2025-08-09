@@ -1,6 +1,9 @@
 package org.overb.jsontocsv.controllers;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.opencsv.CSVWriter;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -77,8 +80,8 @@ public class Main {
         tvJsonSchema.setCellFactory(tv -> new NamedSchemaTreeCell());
         tvJsonSchema.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
-        csvNameColumn.setCellValueFactory(new PropertyValueFactory<>("csvColumn"));
-        jsonPathColumn.setCellValueFactory(new PropertyValueFactory<>("jsonColumn"));
+        csvNameColumn.setCellValueFactory(new PropertyValueFactory<>("columnName"));
+        jsonPathColumn.setCellValueFactory(new PropertyValueFactory<>("jsonSource"));
         customColumn.setCellValueFactory(new PropertyValueFactory<>("custom"));
         customColumn.setCellFactory(CheckBoxTableCell.forTableColumn(customColumn));
         tblColumnDefinitions.setItems(csvColumnDefinitions);
@@ -136,14 +139,14 @@ public class Main {
                 }
 
                 Set<String> existing = csvDefinitions.stream()
-                        .map(CsvColumnDefinition::getCsvColumn)
+                        .map(CsvColumnDefinition::getColumnName)
                         .collect(Collectors.toSet());
                 if (existing.contains(csvColumn)) {
                     csvColumn = csvColumn + "_" + UUID.randomUUID();
                 }
                 CsvColumnDefinition def = new CsvColumnDefinition();
-                def.setCsvColumn(csvColumn);
-                def.setJsonColumn(item.node());
+                def.setColumnName(csvColumn);
+                def.setJsonSource(item.node());
                 def.setType(ColumnTypes.DEFAULT);
                 csvDefinitions.add(def);
             }
@@ -247,7 +250,7 @@ public class Main {
         if (file == null) return;
 
         List<String> headers = csvColumnDefinitions.stream()
-                .map(CsvColumnDefinition::getCsvColumn)
+                .map(CsvColumnDefinition::getColumnName)
                 .toList();
         tblColumnDefinitions.setDisable(true);
         tblCsvPreview.setDisable(true);
@@ -331,8 +334,8 @@ public class Main {
             return;
         }
         for (CsvColumnDefinition def : csvColumnDefinitions) {
-            TableColumn<Map<String, String>, String> col = new TableColumn<>(def.getCsvColumn());
-            col.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().get(def.getCsvColumn())));
+            TableColumn<Map<String, String>, String> col = new TableColumn<>(def.getColumnName());
+            col.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().get(def.getColumnName())));
             col.setReorderable(false);
             tblCsvPreview.getColumns().add(col);
         }
@@ -348,10 +351,58 @@ public class Main {
     }
 
     public void loadCsvDefinitions(ActionEvent actionEvent) {
+        File file = UiHelper.openFileChooser(window, FileDialogTypes.LOAD, "Load J2CSV definitions", new FileChooser.ExtensionFilter("J2CSV Files (*.j2csv)", "*.j2csv"));
+        if (file == null) return;
+
+        tblColumnDefinitions.setDisable(true);
+        tblCsvPreview.setDisable(true);
+        tvJsonSchema.setDisable(true);
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            List<CsvColumnDefinition> loaded = mapper.readValue(
+                    file,
+                    new TypeReference<List<CsvColumnDefinition>>() {
+                    }
+            );
+
+            csvColumnDefinitions.clear();
+            csvColumnDefinitions.addAll(loaded);
+            tblColumnDefinitions.refresh();
+            generateCsvPreview();
+        } catch (Exception error) {
+            UiHelper.errorBox(window, error);
+        } finally {
+            tblColumnDefinitions.setDisable(false);
+            tblCsvPreview.setDisable(false);
+            tvJsonSchema.setDisable(false);
+        }
 
     }
 
     public void saveCsvDefinitions(ActionEvent actionEvent) {
+        if (csvColumnDefinitions.isEmpty()) {
+            UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Alert", "Nothing to save.");
+            return;
+        }
+        File file = UiHelper.openFileChooser(window, FileDialogTypes.SAVE, "SAVE J2CSV definitions", new FileChooser.ExtensionFilter("J2CSV Files (*.j2csv)", "*.j2csv"));
+        if (file == null) return;
+        if (!file.getName().toLowerCase(Locale.ROOT).endsWith(".j2csv")) {
+            file = new File(file.getParentFile(), file.getName() + ".j2csv");
+        }
 
+        tblColumnDefinitions.setDisable(true);
+        tblCsvPreview.setDisable(true);
+        tvJsonSchema.setDisable(true);
+        try {
+            ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+            mapper.writeValue(file, new ArrayList<>(csvColumnDefinitions));
+//            UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info", "Saved " + csvColumnDefinitions.size() + " column definitions to " + file.getName());
+        } catch (Exception error) {
+            UiHelper.errorBox(window, error);
+        } finally {
+            tblColumnDefinitions.setDisable(false);
+            tblCsvPreview.setDisable(false);
+            tvJsonSchema.setDisable(false);
+        }
     }
 }
