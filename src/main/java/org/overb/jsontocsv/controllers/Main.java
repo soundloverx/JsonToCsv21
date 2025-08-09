@@ -40,7 +40,7 @@ public class Main {
     @FXML
     private TreeView<NamedSchema> tvJsonSchema;
     @FXML
-    private TableView<CsvColumnDefinition> columnDefinitionsTable;
+    private TableView<CsvColumnDefinition> tblColumnDefinitions;
     @FXML
     private TableColumn<CsvColumnDefinition, String> csvNameColumn;
     @FXML
@@ -48,7 +48,7 @@ public class Main {
     @FXML
     private TableColumn<CsvColumnDefinition, Boolean> customColumn;
     @FXML
-    private TableView<Map<String, String>> csvTableView;
+    private TableView<Map<String, String>> tblCsvPreview;
     @FXML
     private MenuItem mnuAddDefinition;
 
@@ -81,14 +81,14 @@ public class Main {
         jsonPathColumn.setCellValueFactory(new PropertyValueFactory<>("jsonColumn"));
         customColumn.setCellValueFactory(new PropertyValueFactory<>("custom"));
         customColumn.setCellFactory(CheckBoxTableCell.forTableColumn(customColumn));
-        columnDefinitionsTable.setItems(csvColumnDefinitions);
+        tblColumnDefinitions.setItems(csvColumnDefinitions);
         Callback<TableView<CsvColumnDefinition>, TableRow<CsvColumnDefinition>> reorderFactory = new ReorderableRowFactory<>(csvColumnDefinitions);
-        columnDefinitionsTable.setRowFactory(tv -> {
+        tblColumnDefinitions.setRowFactory(tv -> {
             TableRow<CsvColumnDefinition> row = reorderFactory.call(tv);
             row.setOnMouseClicked(evt -> editColumnDefinition(evt, row));
             return row;
         });
-        columnDefinitionsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        tblColumnDefinitions.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         csvColumnDefinitions.addListener((ListChangeListener<CsvColumnDefinition>) change -> {
             if (change.next()) {
                 generateCsvPreview();
@@ -108,13 +108,13 @@ public class Main {
             db.setContent(content);
             evt.consume();
         });
-        columnDefinitionsTable.setOnDragOver(evt -> {
-            if (evt.getGestureSource() != columnDefinitionsTable && evt.getDragboard().hasContent(NAMED_SCHEMA_LIST)) {
+        tblColumnDefinitions.setOnDragOver(evt -> {
+            if (evt.getGestureSource() != tblColumnDefinitions && evt.getDragboard().hasContent(NAMED_SCHEMA_LIST)) {
                 evt.acceptTransferModes(TransferMode.COPY);
             }
             evt.consume();
         });
-        columnDefinitionsTable.setOnDragDropped(evt -> {
+        tblColumnDefinitions.setOnDragDropped(evt -> {
             Dragboard db = evt.getDragboard();
             if (!db.hasContent(NAMED_SCHEMA_LIST)) {
                 evt.setDropCompleted(false);
@@ -128,7 +128,7 @@ public class Main {
                 evt.setDropCompleted(false);
                 evt.consume();
             }
-            ObservableList<CsvColumnDefinition> csvDefinitions = columnDefinitionsTable.getItems();
+            ObservableList<CsvColumnDefinition> csvDefinitions = tblColumnDefinitions.getItems();
             for (JsonDragNode item : items) {
                 String csvColumn = item.node();
                 if (Preferences.applicationProperties.isColumnsSnakeCase()) {
@@ -194,7 +194,7 @@ public class Main {
             CsvColumnDefinition original = new CsvColumnDefinition(edited);
             EditColumn.show(window, csvColumnDefinitions, edited);
             if (!edited.equals(original)) {
-                columnDefinitionsTable.refresh();
+                tblColumnDefinitions.refresh();
                 generateCsvPreview();
             }
         }
@@ -202,7 +202,7 @@ public class Main {
 
     @FXML
     private void resetDefinitions() {
-        csvTableView.getItems().clear();
+        tblCsvPreview.getItems().clear();
         csvColumnDefinitions.clear();
         txtRoot.setText(null);
     }
@@ -215,11 +215,14 @@ public class Main {
     }
 
     @FXML
-    private void openJsonFile() {
+    private void loadJsonFile() {
         File file = UiHelper.openFileChooser(window, FileDialogTypes.LOAD, "Open JSON file", new FileChooser.ExtensionFilter("JSON Files (*.json)", "*.json"));
         if (file == null) return;
         try {
             resetEverything();
+            tblColumnDefinitions.setDisable(true);
+            tblCsvPreview.setDisable(true);
+            tvJsonSchema.setDisable(true);
             loadedJson = JsonIo.loadJsonFile(file);
             loadJsonSchemaIntoTree();
             if (Preferences.applicationProperties.isAutoConvertOnLoad()) {
@@ -227,6 +230,10 @@ public class Main {
             }
         } catch (Exception error) {
             UiHelper.errorBox(window, error);
+        } finally {
+            tblColumnDefinitions.setDisable(false);
+            tblCsvPreview.setDisable(false);
+            tvJsonSchema.setDisable(false);
         }
     }
 
@@ -242,11 +249,19 @@ public class Main {
         List<String> headers = csvColumnDefinitions.stream()
                 .map(CsvColumnDefinition::getCsvColumn)
                 .toList();
+        tblColumnDefinitions.setDisable(true);
+        tblCsvPreview.setDisable(true);
+        tvJsonSchema.setDisable(true);
         try (CSVWriter writer = new CSVWriter(new FileWriter(file))) {
             writer.writeNext(headers.toArray(new String[0]));
-            CsvRowExpander.streamCsvRows(loadedJson, txtRoot.getText(), csvColumnDefinitions, headers, writer::writeNext);
+            long rows = CsvRowExpander.streamCsvRows(loadedJson, txtRoot.getText(), csvColumnDefinitions, headers, writer::writeNext);
+            UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info", "Saved " + rows + " rows to " + file.getName());
         } catch (Exception error) {
             UiHelper.errorBox(window, error);
+        } finally {
+            tblColumnDefinitions.setDisable(false);
+            tblCsvPreview.setDisable(false);
+            tvJsonSchema.setDisable(false);
         }
     }
 
@@ -311,7 +326,7 @@ public class Main {
 
     private void generateCsvPreview() {
         if (loadedJson == null) return;
-        csvTableView.getColumns().clear();
+        tblCsvPreview.getColumns().clear();
         if (csvColumnDefinitions.isEmpty()) {
             return;
         }
@@ -319,16 +334,24 @@ public class Main {
             TableColumn<Map<String, String>, String> col = new TableColumn<>(def.getCsvColumn());
             col.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().get(def.getCsvColumn())));
             col.setReorderable(false);
-            csvTableView.getColumns().add(col);
+            tblCsvPreview.getColumns().add(col);
         }
         try {
             int limit = Preferences.applicationProperties.getPreviewLimit();
             if (!Preferences.applicationProperties.isLimitedPreviewRows()) {
                 limit = 0;
             }
-            csvTableView.setItems(CsvRowExpander.previewCsvRows(loadedJson, txtRoot.getText(), csvColumnDefinitions, limit));
+            tblCsvPreview.setItems(CsvRowExpander.previewCsvRows(loadedJson, txtRoot.getText(), csvColumnDefinitions, limit));
         } catch (Exception e) {
             UiHelper.errorBox(window, e);
         }
+    }
+
+    public void loadCsvDefinitions(ActionEvent actionEvent) {
+
+    }
+
+    public void saveCsvDefinitions(ActionEvent actionEvent) {
+
     }
 }

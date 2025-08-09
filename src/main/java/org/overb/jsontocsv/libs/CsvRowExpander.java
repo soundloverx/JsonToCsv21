@@ -7,6 +7,7 @@ import org.overb.jsontocsv.dto.CsvColumnDefinition;
 import org.overb.jsontocsv.enums.ColumnTypes;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 public final class CsvRowExpander {
@@ -16,9 +17,8 @@ public final class CsvRowExpander {
         ObservableList<Map<String, String>> rows = FXCollections.observableArrayList();
         if (definitions == null || definitions.isEmpty() || loadedJson == null) return rows;
         JsonNode root = JsonPath.navigate(loadedJson, rootPath);
-        List<JsonNode> records = toRecordList(root);
         int produced = 0;
-        for (JsonNode record : records) {
+        for (JsonNode record : toRecordList(root)) {
             streamRecord(loadedJson, record, definitions, headersFrom(definitions), row -> {
                 Map<String, String> map = new LinkedHashMap<>();
                 List<String> headers = headersFrom(definitions);
@@ -37,13 +37,22 @@ public final class CsvRowExpander {
         return rows;
     }
 
-    public static void streamCsvRows(JsonNode loadedJson, String rootPath, List<CsvColumnDefinition> definitions,
+    public static long streamCsvRows(JsonNode loadedJson, String rootPath, List<CsvColumnDefinition> definitions,
                                      List<String> headers, Consumer<String[]> rowConsumer) {
-        if (definitions == null || definitions.isEmpty() || loadedJson == null) return;
+        if (definitions == null || definitions.isEmpty() || loadedJson == null) {
+            return 0L;
+        }
+        AtomicLong rowCounter = new AtomicLong(0);
+        Consumer<String[]> countingConsumer = row -> {
+            rowConsumer.accept(row);
+            rowCounter.incrementAndGet();
+        };
+
         JsonNode root = JsonPath.navigate(loadedJson, rootPath);
         for (JsonNode record : toRecordList(root)) {
-            streamRecord(loadedJson, record, definitions, headers, rowConsumer);
+            streamRecord(loadedJson, record, definitions, headers, countingConsumer);
         }
+        return rowCounter.get();
     }
 
     private static List<JsonNode> toRecordList(JsonNode root) {
@@ -160,7 +169,7 @@ public final class CsvRowExpander {
             List<Map<String, String>> next = new ArrayList<>();
             for (Map<String, String> ctx : contexts) {
                 List<Map<String, String>> res = FunctionsHelper.evaluateFormula(ctx, loadedJson, f, localBase);
-                if (res == null || res.isEmpty()) {
+                if (res.isEmpty()) {
                     next.add(ctx); // no-op if function returns nothing
                 } else {
                     next.addAll(res);

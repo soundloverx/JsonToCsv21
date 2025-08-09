@@ -16,6 +16,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
+<?import javafx.scene.control.SeparatorMenuItem?>
 <SplitPane dividerPositions="0.5, 0.5" orientation="VERTICAL" prefHeight="270.0" prefWidth="638.0"
            xmlns="http://javafx.com/javafx/21.0.8" xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="org.overb.jsontocsv.controllers.Main">
@@ -31,10 +32,16 @@
                                     <menus>
                                         <Menu mnemonicParsing="false" text="File">
                                             <items>
-                                                <MenuItem fx:id="mnuLoad" mnemonicParsing="false"
-                                                          onAction="#openJsonFile" text="Load JSON file..."/>
+                                                <MenuItem fx:id="mnuLoadJson" mnemonicParsing="false"
+                                                          onAction="#loadJsonFile" text="Load JSON file..."/>
                                                 <MenuItem fx:id="mnuSaveCsv" mnemonicParsing="false" onAction="#saveCsv"
                                                           text="Save CSV..."/>
+                                                <SeparatorMenuItem />
+                                                <MenuItem fx:id="mnuLoadCsvDefinition" mnemonicParsing="false"
+                                                          onAction="#loadCsvDefinitions" text="Load CSV definitions..."/>
+                                                <MenuItem fx:id="mnuSaveCsvDefinition" mnemonicParsing="false" onAction="#saveCsvDefinitions"
+                                                          text="Save CSV definitions..."/>
+                                                <SeparatorMenuItem />
                                                 <MenuItem fx:id="mnuPreferences" mnemonicParsing="false"
                                                           text="Preferences..."/>
                                             </items>
@@ -75,7 +82,7 @@
                             </children>
                         </HBox>
 
-                        <TableView fx:id="columnDefinitionsTable" VBox.vgrow="ALWAYS">
+                        <TableView fx:id="tblColumnDefinitions" VBox.vgrow="ALWAYS">
                             <columns>
                                 <TableColumn fx:id="csvNameColumn" editable="false" reorderable="false" text="CSV"/>
                                 <TableColumn fx:id="jsonPathColumn" editable="false" reorderable="false" text="JSON"/>
@@ -89,7 +96,7 @@
                 </VBox>
             </items>
         </SplitPane>
-        <TableView fx:id="csvTableView" minHeight="200" SplitPane.resizableWithParent="true"/>
+        <TableView fx:id="tblCsvPreview" minHeight="200" SplitPane.resizableWithParent="true"/>
         <ToolBar maxHeight="20.0" minHeight="20.0" nodeOrientation="RIGHT_TO_LEFT" prefHeight="20.0">
             <items>
                 <Label alignment="CENTER_RIGHT" text="Copyright © 2025, Cristi Stan">
