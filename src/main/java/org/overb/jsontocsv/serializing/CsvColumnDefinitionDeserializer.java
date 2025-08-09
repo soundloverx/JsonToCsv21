@@ -30,9 +30,8 @@ public class CsvColumnDefinitionDeserializer extends JsonDeserializer<CsvColumnD
             } catch (IllegalArgumentException ignored) {
             }
         }
-        boolean customFlag = type != ColumnTypes.DEFAULT;
         CsvColumnDefinition def = new CsvColumnDefinition(csvColumn, jsonColumn, type);
-        def.setCustom(customFlag);
+        def.setCustom(type != ColumnTypes.DEFAULT);
         return def;
     }
 }
