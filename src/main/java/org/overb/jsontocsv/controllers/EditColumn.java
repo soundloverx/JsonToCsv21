@@ -87,7 +87,7 @@ public class EditColumn {
     private void onOk() {
         String name = txtColumnName.getText().trim();
         if (name.isEmpty()) {
-            dialogStage.close();
+            UiHelper.messageBox(window, Alert.AlertType.ERROR, "Error", "Column name cannot be empty.");
             return;
         }
         if (Preferences.applicationProperties.isColumnsSnakeCase()) {

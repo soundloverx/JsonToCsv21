@@ -16,20 +16,22 @@ public final class CsvRowExpander {
                                                                      List<CsvColumnDefinition> definitions, int limit) {
         ObservableList<Map<String, String>> rows = FXCollections.observableArrayList();
         if (definitions == null || definitions.isEmpty() || loadedJson == null) return rows;
+
         JsonNode root = JsonPath.navigate(loadedJson, rootPath);
-        int produced = 0;
+        List<String> headers = headersFrom(definitions);
+
         for (JsonNode record : toRecordList(root)) {
-            streamRecord(loadedJson, record, definitions, headersFrom(definitions), row -> {
+            streamRecord(loadedJson, record, definitions, headers, row -> {
+                if (limit > 0 && rows.size() >= limit){
+                    return;
+                }
                 Map<String, String> map = new LinkedHashMap<>();
-                List<String> headers = headersFrom(definitions);
                 for (int i = 0; i < headers.size(); i++) {
                     map.put(headers.get(i), row[i]);
                 }
                 rows.add(map);
             });
             if (limit > 0 && rows.size() >= limit) break;
-            produced += rows.size();
-            if (limit > 0 && produced >= limit) break;
         }
         if (limit > 0 && rows.size() > limit) {
             return FXCollections.observableArrayList(rows.subList(0, limit));

@@ -1,6 +1,8 @@
 package org.overb.jsontocsv.libs;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -200,5 +202,48 @@ public class CustomStringUtils {
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(text);
         return matcher.find();
+    }
+
+    public static List<String> splitStringsRespectingQuotes(String input) {
+        List<String> args = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+        boolean escape = false;
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            if (escape) {
+                current.append(c);
+                escape = false;
+                continue;
+            }
+            if (c == '\\') {
+                escape = true;
+                continue;
+            }
+            if (c == '\'') {
+                inQuotes = !inQuotes;
+                current.append(c);
+                continue;
+            }
+            if (c == ',' && !inQuotes) {
+                args.add(current.toString().trim());
+                current.setLength(0);
+                continue;
+            }
+            current.append(c);
+        }
+        if (!current.isEmpty()) {
+            args.add(current.toString().trim());
+        }
+        return args;
+    }
+
+    public static String unquoteIfQuoted(String s) {
+        if (s == null) return null;
+        String trimmed = s.trim();
+        if (trimmed.length() >= 2 && trimmed.startsWith("'") && trimmed.endsWith("'")) {
+            return trimmed.substring(1, trimmed.length() - 1).replace("\\'", "'");
+        }
+        return trimmed;
     }
 }

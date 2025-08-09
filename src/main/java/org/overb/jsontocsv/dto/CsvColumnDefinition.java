@@ -53,7 +53,7 @@ public class CsvColumnDefinition {
     }
 
     public void setType(ColumnTypes type) {
-        this.type = type;
+        this.type = Objects.requireNonNullElse(type, ColumnTypes.DEFAULT);
         this.setCustom(type.isCustom());
     }
 

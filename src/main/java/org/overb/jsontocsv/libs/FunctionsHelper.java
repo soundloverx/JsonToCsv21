@@ -25,7 +25,7 @@ public class FunctionsHelper {
         }
         String functionName = m.group(1).toUpperCase();
         String functionArguments = m.group(2);
-        String[] rawArgs = functionArguments.isBlank() ? new String[0] : functionArguments.split("\\s*,\\s*");
+        String[] rawArgs = functionArguments.isBlank() ? new String[0] : CustomStringUtils.splitStringsRespectingQuotes(functionArguments).toArray(String[]::new);
 
         String[] resolvedArgs = new String[rawArgs.length];
         for (int i = 0; i < rawArgs.length; i++) {
@@ -38,12 +38,20 @@ public class FunctionsHelper {
         }
 
         return switch (function) {
-            case FIND ->
-                    List.of(putValue(base, columnDefinition.getColumnName(), doFind(base, loadedJson, resolvedArgs)));
+            case FIND -> {
+                String res = doFind(base, loadedJson,
+                        new String[]{
+                                CustomStringUtils.unquoteIfQuoted(resolvedArgs[0]),
+                                CustomStringUtils.unquoteIfQuoted(resolvedArgs[1]),
+                                CustomStringUtils.unquoteIfQuoted(resolvedArgs[2])
+                        }
+                );
+                yield List.of(putValue(base, columnDefinition.getColumnName(), res));
+            }
             case CURRENT_TIMESTAMP -> List.of(putValue(base, columnDefinition.getColumnName(), doCurrentTimestamp()));
             case CONCAT -> List.of(putValue(base, columnDefinition.getColumnName(), doConcat(base, resolvedArgs)));
             case JSON ->
-                    List.of(putValue(base, columnDefinition.getColumnName(), doJson(loadedJson, localBase, rawArgs[0])));
+                    List.of(putValue(base, columnDefinition.getColumnName(), doJson(loadedJson, localBase, CustomStringUtils.unquoteIfQuoted(resolvedArgs[0]))));
             default ->
                     List.of(putValue(base, columnDefinition.getColumnName(), "UNKNOWN FUNCTION: " + functionName.toUpperCase()));
         };
