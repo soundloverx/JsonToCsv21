@@ -9,7 +9,7 @@ import java.util.List;
 public final class JsonPath {
 
     public static JsonNode navigate(JsonNode node, String path) {
-        if (node == null || path == null || path.isBlank()) return node;
+        if (node == null || path == null || path.isBlank() || ".".equals(path)) return node;
         for (String seg : path.split("\\.")) {
             node = node.path(seg);
         }

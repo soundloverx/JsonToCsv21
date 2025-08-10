@@ -1,15 +1,13 @@
 package org.overb.jsontocsv.controllers;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.opencsv.CSVWriter;
 import com.opencsv.ICSVWriter;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -61,6 +59,7 @@ public class Main {
     private final ObservableList<CsvColumnDefinition> csvColumnDefinitions = FXCollections.observableArrayList();
     private JsonNode loadedJson;
     private Window window;
+    private Task<ObservableList<Map<String, String>>> currentPreviewTask;
 
     @FXML
     public void initialize() {
@@ -125,7 +124,6 @@ public class Main {
                 evt.setDropCompleted(false);
                 evt.consume();
             }
-            @SuppressWarnings("unchecked")
             List<JsonDragNode> items = ((List<JsonDragNode>) db.getContent(NAMED_SCHEMA_LIST))
                     .stream().filter(item -> item.schemaClass().equals(JsonSchemaHelper.PrimitiveSchema.class.getSimpleName()))
                     .toList();
@@ -167,7 +165,6 @@ public class Main {
                 evt.setDropCompleted(false);
                 evt.consume();
             }
-            @SuppressWarnings("unchecked")
             List<JsonDragNode> items = ((List<JsonDragNode>) db.getContent(NAMED_SCHEMA_LIST))
                     .stream().filter(item -> item.schemaClass().equals(JsonSchemaHelper.ArraySchema.class.getSimpleName()))
                     .toList();
@@ -225,9 +222,7 @@ public class Main {
         if (file == null) return;
         try {
             resetEverything();
-            tblColumnDefinitions.setDisable(true);
-            tblCsvPreview.setDisable(true);
-            tvJsonSchema.setDisable(true);
+            setControlsEnabled(false);
             loadedJson = JsonIo.loadJsonFile(file);
             loadJsonSchemaIntoTree();
             if (Preferences.applicationProperties.isAutoConvertOnLoad()) {
@@ -236,9 +231,7 @@ public class Main {
         } catch (Exception error) {
             UiHelper.errorBox(window, error);
         } finally {
-            tblColumnDefinitions.setDisable(false);
-            tblCsvPreview.setDisable(false);
-            tvJsonSchema.setDisable(false);
+            setControlsEnabled(true);
         }
     }
 
@@ -254,9 +247,7 @@ public class Main {
         List<String> headers = csvColumnDefinitions.stream()
                 .map(CsvColumnDefinition::getColumnName)
                 .toList();
-        tblColumnDefinitions.setDisable(true);
-        tblCsvPreview.setDisable(true);
-        tvJsonSchema.setDisable(true);
+        setControlsEnabled(false);
         try (CSVWriter writer = new CSVWriter(new FileWriter(file), ',', ICSVWriter.NO_QUOTE_CHARACTER, ICSVWriter.NO_ESCAPE_CHARACTER, "\n")) {
             var rowConsumer = CsvRowConsumer.rowWriter(writer, Preferences.applicationProperties.getNullType());
             rowConsumer.accept(headers.toArray(new String[0]));
@@ -265,9 +256,7 @@ public class Main {
         } catch (Exception error) {
             UiHelper.errorBox(window, error);
         } finally {
-            tblColumnDefinitions.setDisable(false);
-            tblCsvPreview.setDisable(false);
-            tvJsonSchema.setDisable(false);
+            setControlsEnabled(true);
         }
     }
 
@@ -286,6 +275,13 @@ public class Main {
         for (TreeItem<?> child : root.getChildren()) {
             expandAll(child);
         }
+    }
+
+    private void setControlsEnabled(boolean enabled) {
+        tblColumnDefinitions.setDisable(!enabled);
+        tblCsvPreview.setDisable(!enabled);
+        tvJsonSchema.setDisable(!enabled);
+        txtRoot.setDisable(!enabled);
     }
 
     private TreeItem<NamedSchema> toTreeItem(String name, JsonSchemaHelper.Schema schema) {
@@ -330,55 +326,91 @@ public class Main {
         }
     }
 
+//    private void generateCsvPreview() {
+//        if (loadedJson == null) return;
+//        tblCsvPreview.getColumns().clear();
+//        if (csvColumnDefinitions.isEmpty()) {
+//            return;
+//        }
+//        for (CsvColumnDefinition def : csvColumnDefinitions) {
+//            TableColumn<Map<String, String>, String> col = new TableColumn<>(def.getColumnName());
+//            col.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().get(def.getColumnName())));
+//            col.setReorderable(false);
+//            tblCsvPreview.getColumns().add(col);
+//        }
+//        try {
+//            int limit = Preferences.applicationProperties.getPreviewLimit();
+//            if (!Preferences.applicationProperties.isLimitedPreviewRows()) {
+//                limit = 0;
+//            }
+//            tblCsvPreview.setItems(CsvRowExpander.previewCsvRows(loadedJson, txtRoot.getText(), csvColumnDefinitions, limit));
+//        } catch (Exception e) {
+//            UiHelper.errorBox(window, e);
+//        }
+//    }
+
     private void generateCsvPreview() {
         if (loadedJson == null) return;
-        tblCsvPreview.getColumns().clear();
         if (csvColumnDefinitions.isEmpty()) {
+            tblCsvPreview.getColumns().clear();
+            tblCsvPreview.getItems().clear();
+            tblCsvPreview.setPlaceholder(new Label("No columns"));
             return;
         }
+        tblCsvPreview.getColumns().clear();
         for (CsvColumnDefinition def : csvColumnDefinitions) {
             TableColumn<Map<String, String>, String> col = new TableColumn<>(def.getColumnName());
             col.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().get(def.getColumnName())));
             col.setReorderable(false);
             tblCsvPreview.getColumns().add(col);
         }
-        try {
-            int limit = Preferences.applicationProperties.getPreviewLimit();
-            if (!Preferences.applicationProperties.isLimitedPreviewRows()) {
-                limit = 0;
-            }
-            tblCsvPreview.setItems(CsvRowExpander.previewCsvRows(loadedJson, txtRoot.getText(), csvColumnDefinitions, limit));
-        } catch (Exception e) {
-            UiHelper.errorBox(window, e);
+        final String root = txtRoot.getText();
+        final List<CsvColumnDefinition> defsSnapshot = new ArrayList<>(csvColumnDefinitions);
+        final int limit = Preferences.applicationProperties.isLimitedPreviewRows() ? Preferences.applicationProperties.getPreviewLimit() : 0;
+        if (currentPreviewTask != null && currentPreviewTask.isRunning()) {
+            currentPreviewTask.cancel();
         }
+        tblCsvPreview.setPlaceholder(new ProgressIndicator());
+        currentPreviewTask = new javafx.concurrent.Task<>() {
+            @Override
+            protected ObservableList<Map<String, String>> call() {
+                return CsvRowExpander.previewCsvRows(loadedJson, root, defsSnapshot, limit);
+            }
+        };
+
+        currentPreviewTask.setOnSucceeded(e -> {
+            ObservableList<Map<String, String>> rows = currentPreviewTask.getValue();
+            tblCsvPreview.setItems(rows);
+            if (rows == null || rows.isEmpty()) {
+                tblCsvPreview.setPlaceholder(new Label("No rows"));
+            } else {
+                tblCsvPreview.setPlaceholder(new Label(""));
+            }
+        });
+
+        currentPreviewTask.setOnFailed(e -> {
+            UiHelper.errorBox(window, (Exception) currentPreviewTask.getException());
+            tblCsvPreview.setPlaceholder(new Label("Error"));
+        });
+
+        new Thread(currentPreviewTask, "preview-builder").start();
     }
 
     public void loadCsvDefinitions(ActionEvent actionEvent) {
         File file = UiHelper.openFileChooser(window, FileDialogTypes.LOAD, "Load J2CSV definitions", new FileChooser.ExtensionFilter("J2CSV Files (*.j2csv)", "*.j2csv"));
         if (file == null) return;
-
-        tblColumnDefinitions.setDisable(true);
-        tblCsvPreview.setDisable(true);
-        tvJsonSchema.setDisable(true);
+        setControlsEnabled(false);
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode node = mapper.readTree(file);
-            txtRoot.setText(node.hasNonNull("root") ? node.get("root").asText() : "");
-            JsonNode defsNode = node.get("definitions");
-            csvColumnDefinitions.clear();
-            if (defsNode != null && defsNode.isArray()) {
-                csvColumnDefinitions.setAll(Arrays.asList(mapper.treeToValue(defsNode, CsvColumnDefinition[].class)));
-            }
+            CsvDefinitionsBundle bundle = JsonIo.MAPPER.readValue(file, CsvDefinitionsBundle.class);
+            txtRoot.setText(bundle.root() != null ? bundle.root() : "");
+            csvColumnDefinitions.setAll(bundle.definitions() != null ? bundle.definitions() : List.of());
             tblColumnDefinitions.refresh();
             generateCsvPreview();
         } catch (Exception error) {
             UiHelper.errorBox(window, error);
         } finally {
-            tblColumnDefinitions.setDisable(false);
-            tblCsvPreview.setDisable(false);
-            tvJsonSchema.setDisable(false);
+            setControlsEnabled(true);
         }
-
     }
 
     public void saveCsvDefinitions(ActionEvent actionEvent) {
@@ -387,24 +419,20 @@ public class Main {
             return;
         }
         File file = UiHelper.openFileChooser(window, FileDialogTypes.SAVE, "SAVE J2CSV definitions", new FileChooser.ExtensionFilter("J2CSV Files (*.j2csv)", "*.j2csv"));
-        if (file == null) return;
+        if (file == null) {
+            return;
+        }
         if (!file.getName().toLowerCase(Locale.ROOT).endsWith(".j2csv")) {
             file = new File(file.getParentFile(), file.getName() + ".j2csv");
         }
-
-        tblColumnDefinitions.setDisable(true);
-        tblCsvPreview.setDisable(true);
-        tvJsonSchema.setDisable(true);
+        setControlsEnabled(false);
         try {
-            ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
             CsvDefinitionsBundle toSave = new CsvDefinitionsBundle(txtRoot.getText(), csvColumnDefinitions);
-            mapper.writerWithDefaultPrettyPrinter().writeValue(file, toSave);
+            JsonIo.MAPPER.writerWithDefaultPrettyPrinter().writeValue(file, toSave);
         } catch (Exception error) {
             UiHelper.errorBox(window, error);
         } finally {
-            tblColumnDefinitions.setDisable(false);
-            tblCsvPreview.setDisable(false);
-            tvJsonSchema.setDisable(false);
+            setControlsEnabled(true);
         }
     }
 }

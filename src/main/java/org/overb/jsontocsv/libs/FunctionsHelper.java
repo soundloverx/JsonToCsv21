@@ -17,26 +17,23 @@ public class FunctionsHelper {
                                                      JsonNode loadedJson,
                                                      CsvColumnDefinition columnDefinition,
                                                      JsonNode localBase) {
-        final Pattern FUNCTION_PATTERN = Pattern.compile("\\s*(\\w+)\\s*\\(\\s*([^)]*)\\s*\\)\\s*");
+//        final Pattern FUNCTION_PATTERN = Pattern.compile("\\s*(\\w+)\\s*\\(\\s*([^)]*)\\s*\\)\\s*");
         String formula = columnDefinition.getJsonSource();
-        Matcher m = FUNCTION_PATTERN.matcher(formula);
-        if (!m.matches()) {
-            return List.of(putValue(base, columnDefinition.getColumnName(), "UNKNOWN FORMULA: " + formula));
+        Matcher functionMatcher = Pattern.compile("\\s*(\\w+)\\s*\\(\\s*(.*?)\\s*\\)\\s*").matcher(formula);
+        if (!functionMatcher.matches()) {
+            return List.of(putValue(base, columnDefinition.getColumnName(), "MALFORMED FORMULA: " + formula));
         }
-        String functionName = m.group(1).toUpperCase();
-        String functionArguments = m.group(2);
+        String functionName = functionMatcher.group(1).toUpperCase();
+        String functionArguments = functionMatcher.group(2);
         String[] rawArgs = functionArguments.isBlank() ? new String[0] : CustomStringUtils.splitStringsRespectingQuotes(functionArguments).toArray(String[]::new);
-
         String[] resolvedArgs = new String[rawArgs.length];
         for (int i = 0; i < rawArgs.length; i++) {
             resolvedArgs[i] = rawArgs[i].trim();
         }
-
         CustomFunctions function = CustomFunctions.fromName(functionName);
         if (function.getParameters() != -1 && function.getParameters() != resolvedArgs.length) {
             return List.of(putValue(base, columnDefinition.getColumnName(), "ERROR: Wrong number of arguments for " + functionName.toUpperCase()));
         }
-
         return switch (function) {
             case FIND -> {
                 String res = doFind(base, loadedJson,

@@ -1,7 +1,6 @@
 package org.overb.jsontocsv.libs;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -13,7 +12,6 @@ import java.util.Map;
  * Helper storing the ObjectSchema, ArraySchema and PrimitiveSchema classes used by JsonService to build the schema of a loaded json
  */
 public class JsonSchemaHelper {
-    public static final ObjectMapper mapper = new ObjectMapper();
 
     public sealed interface Schema permits ObjectSchema, ArraySchema, PrimitiveSchema {
         Schema merge(Schema other);
@@ -36,7 +34,7 @@ public class JsonSchemaHelper {
 
         @Override
         public JsonNode instantiate() {
-            ObjectNode node = mapper.createObjectNode();
+            ObjectNode node = JsonIo.MAPPER.createObjectNode();
             for (Map.Entry<String, Schema> entry : fields.entrySet()) {
                 node.set(entry.getKey(), entry.getValue().instantiate());
             }
@@ -79,7 +77,7 @@ public class JsonSchemaHelper {
 
         @Override
         public JsonNode instantiate() {
-            ArrayNode array = mapper.createArrayNode();
+            ArrayNode array = JsonIo.MAPPER.createArrayNode();
             int count = (itemsCount != null && itemsCount > 0) ? itemsCount : 1;
             for (int i = 0; i < count; i++) {
                 array.add(elementSchema.instantiate());

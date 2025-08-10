@@ -1,14 +1,14 @@
 package org.overb.jsontocsv.elements;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.overb.jsontocsv.enums.CsvNullStyles;
+import org.overb.jsontocsv.libs.JsonIo;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -17,8 +17,6 @@ import java.nio.file.Paths;
 @Getter
 @Setter
 public class ApplicationProperties {
-
-    private static final ObjectMapper MAPPER = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
 
     @JsonProperty("auto_convert_on_load")
     private boolean autoConvertOnLoad;
@@ -36,8 +34,11 @@ public class ApplicationProperties {
     private CsvNullStyles nullType;
 
     public void save() throws IOException {
-        Path file = getConfigPath();
-        MAPPER.writeValue(Files.newBufferedWriter(file), this);
+        Path configFile = getConfigPath();
+        Files.createDirectories(configFile.getParent());
+        try (var w = Files.newBufferedWriter(configFile, StandardCharsets.UTF_8)) {
+            JsonIo.MAPPER.writerWithDefaultPrettyPrinter().writeValue(w, this);
+        }
     }
 
     private static Path getConfigPath() throws IOException {
@@ -55,7 +56,9 @@ public class ApplicationProperties {
         try {
             Path configFile = getConfigPath();
             if (Files.exists(configFile)) {
-                return MAPPER.readValue(Files.newBufferedReader(configFile), ApplicationProperties.class);
+                try (var r = Files.newBufferedReader(configFile, StandardCharsets.UTF_8)) {
+                    return JsonIo.MAPPER.readValue(r, ApplicationProperties.class);
+                }
             }
         } catch (IOException e) {
         }

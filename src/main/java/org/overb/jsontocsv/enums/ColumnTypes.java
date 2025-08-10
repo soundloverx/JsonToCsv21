@@ -10,7 +10,7 @@ public enum ColumnTypes {
     @Getter
     private final boolean custom;
 
-    private ColumnTypes(final boolean custom) {
+    ColumnTypes(final boolean custom) {
         this.custom = custom;
     }
 }

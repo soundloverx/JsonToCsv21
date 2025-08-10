@@ -6,7 +6,10 @@ import javafx.collections.ObservableList;
 import org.overb.jsontocsv.dto.CsvColumnDefinition;
 import org.overb.jsontocsv.enums.ColumnTypes;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -22,7 +25,7 @@ public final class CsvRowExpander {
 
         for (JsonNode record : toRecordList(root)) {
             streamRecord(loadedJson, record, definitions, headers, row -> {
-                if (limit > 0 && rows.size() >= limit){
+                if (limit > 0 && rows.size() >= limit) {
                     return;
                 }
                 Map<String, String> map = new LinkedHashMap<>();

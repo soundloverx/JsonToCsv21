@@ -32,7 +32,7 @@ public class CsvRowConsumer {
                     out[i] = original;
                 }
             }
-            writer.writeNext(out);
+            writer.writeNext(out, false);
         };
     }
 }
