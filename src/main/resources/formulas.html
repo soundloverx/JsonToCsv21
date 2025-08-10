@@ -1,97 +1,452 @@
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Supported Custom Functions</title>
+    <meta charset="UTF-8"/>
+    <title>JSON → CSV • Supported Formulas</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <style>
+        :root {
+            --bg: #0b0c10;
+            --panel: #111319;
+            --text: #e9eef5;
+            --muted: #a9b3c1;
+            --accent: #4ea1ff;
+            --accent-2: #7fd1ae;
+            --border: #1b2030;
+            --code-bg: #0f121a;
+            --chip-bg: #151a26;
+            --danger: #ff6b6b;
+            --ok: #64d39b;
+            --shadow: 0 8px 24px rgba(0, 0, 0, .35);
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg: #f7f9fc;
+                --panel: #ffffff;
+                --text: #0b1730;
+                --muted: #4d5b73;
+                --accent: #1769ff;
+                --accent-2: #0aa36c;
+                --border: #e6ebf2;
+                --code-bg: #f2f5fa;
+                --chip-bg: #eef2f7;
+                --shadow: 0 8px 20px rgba(10, 26, 70, .08);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            background: radial-gradient(1200px 800px at 20% -10%, rgba(78, 161, 255, .25), transparent 40%),
+            radial-gradient(900px 700px at 110% 10%, rgba(127, 209, 174, .18), transparent 45%),
+            var(--bg);
+            color: var(--text);
+            font: 15px/1.55 system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, sans-serif;
         }
 
-        table {
-            border-collapse: collapse;
+        .wrap {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-width: 980px;
             width: 100%;
+            margin: 0 auto;
         }
 
-        table, th, td {
-            border: 1px solid #333;
+        header {
+            flex-shrink: 0;
+            padding: 32px 20px 20px;
         }
 
-        th, td {
+        .logo {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            box-shadow: var(--shadow);
+        }
+
+        h1 {
+            font-size: 22px;
+            margin: 0;
+            letter-spacing: .3px;
+        }
+
+        .sub {
+            color: var(--muted);
+            margin-top: 4px;
+            font-size: 13px;
+        }
+
+        .toolbar {
+            flex-shrink: 0;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            padding: 10px 20px 18px;
+            background: transparent;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            backdrop-filter: none;
+        }
+
+        .search {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .search input {
+            border: 0;
+            outline: 0;
+            width: 100%;
+            background: transparent;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .chip {
+            font-size: 12px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: var(--chip-bg);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            white-space: nowrap;
+            align-self: center;
+        }
+
+        .grid {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding: 8px 20px 20px;
+            background: transparent;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent) transparent;
+        }
+
+        .grid::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .grid::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .grid::-webkit-scrollbar-thumb {
+            background-color: var(--accent);
+            border-radius: 4px;
+        }
+
+        .grid::-webkit-scrollbar-thumb:hover {
+            background-color: color-mix(in oklab, var(--accent) 70%, black);
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px 16px 14px;
+            box-shadow: var(--shadow);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: color-mix(in oklab, var(--accent) 28%, var(--border));
+        }
+
+        .title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-weight: 650;
+            font-size: 15px;
+        }
+
+        code.inline {
+            padding: 2px 6px;
+            border-radius: 8px;
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            font-family: ui-monospace, Menlo, Consolas, "SF Mono", "Roboto Mono", monospace;
+            font-size: 12.5px;
+        }
+
+        .desc {
+            color: var(--muted);
+            font-size: 13.5px;
+            margin-bottom: 10px;
+        }
+
+        .args {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 8px 0 10px;
+        }
+
+        .args .chip {
+            font-family: ui-monospace, Menlo, Consolas, "SF Mono", "Roboto Mono", monospace;
+        }
+
+        .example {
+            margin-top: 10px;
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .example header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             padding: 8px 10px;
-            vertical-align: top;
+            background: linear-gradient(180deg, rgba(255, 255, 255, .02), transparent);
+            border-bottom: 1px solid var(--border);
         }
 
-        th {
-            background: #f2f2f2;
-            text-align: left;
+        .example header span {
+            font-size: 12px;
+            color: var(--muted);
         }
 
-        code, pre {
-            font-family: Consolas, "Courier New", monospace;
+        .btn {
+            border: 1px solid var(--border);
+            background: var(--panel);
+            color: var(--text);
+            border-radius: 10px;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        pre {
+            margin: 0;
+            padding: 12px;
+            white-space: pre-wrap;
+            font-family: ui-monospace, Menlo, Consolas, "SF Mono", "Roboto Mono", monospace;
+            font-size: 12.5px;
+            color: var(--text);
         }
 
         .note {
-            color: #555;
-            font-size: 0.95em;
-            padding-top: 5px;
+            color: var(--muted);
+            font-size: 12.5px;
+            margin-top: 8px;
+        }
+
+        footer {
+            margin-top: 26px;
+            color: var(--muted);
+            font-size: 12.5px;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            color: var(--muted);
+        }
+
+        .ok {
+            border-color: color-mix(in oklab, var(--ok) 45%, var(--border));
+            color: var(--ok);
+        }
+
+        .warn {
+            border-color: color-mix(in oklab, var(--danger) 45%, var(--border));
+            color: var(--danger);
         }
     </style>
 </head>
 <body>
-<h2>Supported Custom Functions</h2>
-
-<table>
-    <tr>
-        <th>Function</th>
-        <th>Description</th>
-        <th>Example</th>
-    </tr>
-
-    <tr>
-        <td><code>CURRENT_TIMESTAMP()</code></td>
-        <td>
-            Returns the current date and time formatted as yyyy-MM-dd HH:mm:ss.
-        </td>
-        <td><code>CURRENT_TIMESTAMP()</code></td>
-    </tr>
-
-    <tr>
-        <td><code>FIND(csv_column, json_path, json_element)</code></td>
-        <td>
-            Looks up a value in JSON and returns a field from the matching object.
-            <div class="note">
-                — csv_column: Name of a CSV column whose value is used for comparison.<br>
-                — json_path: Full path to the field to compare against (e.g., results.items.id).<br>
-                — json_element: Field name to return from the same object where the match is found.<br>
-                Returns the first matching value, or null if not found.
+<div class="wrap">
+    <header>
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+            <h1>Supported Formulas</h1>
+            <div class="sub">Use these inside column <strong>JSON source</strong> expressions in the <strong>column
+                editor dialog</strong>.
             </div>
-        </td>
-        <td><code>FIND(appid, results.app_info.appid, app_name)</code></td>
-    </tr>
+        </div>
+    </header>
 
-    <tr>
-        <td><code>CONCAT(arg1, arg2, ...)</code></td>
-        <td>
-            Concatenates multiple pieces into a single string. Arguments can be:
-            <div class="note">
-                — a CSV column name (its value is used; missing values become empty strings).<br>
-                — a single-quoted string literal (e.g., ' - ').
+    <div class="toolbar">
+        <div class="search">
+            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor"
+                      d="M10 4a6 6 0 1 1 0 12a6 6 0 0 1 0-12m0-2a8 8 0 1 0 4.9 14.32l4.39 4.39l1.42-1.42l-4.39-4.39A8 8 0 0 0 10 2"/>
+            </svg>
+            <input id="q" type="search" placeholder="Search by name, argument, or description…" autofocus/>
+        </div>
+        <span class="chip" id="count">4 formulas</span>
+    </div>
+
+    <section class="grid" id="cards">
+
+        <!-- CURRENT_TIMESTAMP -->
+        <article class="card" data-keywords="current timestamp now date time yyyy-MM-dd HH:mm:ss">
+            <div class="title">
+                <code class="inline">CURRENT_TIMESTAMP()</code>
+                <span class="badge ok">0 args</span>
             </div>
-        </td>
-        <td><code>CONCAT(appid, ' - ', app_name)</code></td>
-    </tr>
-
-    <tr>
-        <td><code>JSON(json_path)</code></td>
-        <td>
-            Returns the JSON at the specified path as a JSON string (object/array/value), or null if not found.
-            <div class="note">
-                — provide a valid path from the JSON root (e.g., results.app_info).
+            <div class="desc">
+                Returns the current date &amp; time formatted as <code class="inline">yyyy-MM-dd HH:mm:ss</code>.
             </div>
-        </td>
-        <td><code>JSON(results.app_info)</code></td>
-    </tr>
-</table>
+            <div class="example">
+                <header><span>Example</span>
+                    <button class="btn" data-copy="CURRENT_TIMESTAMP()">Copy</button>
+                </header>
+                <pre>CURRENT_TIMESTAMP()</pre>
+            </div>
+        </article>
 
+        <!-- FIND -->
+        <article class="card" data-keywords="find lookup join array object search id key compare return">
+            <div class="title">
+                <code class="inline">FIND(csv_column, json_path, json_element)</code>
+                <span class="badge ok">3 args</span>
+            </div>
+            <div class="desc">
+                Scans the JSON at <code class="inline">json_path</code> (object or array), finds the first entry where
+                the field at that path equals the value of <code class="inline">csv_column</code>, and returns
+                <code class="inline">json_element</code> from the same object. Returns <em>null</em> if no match.
+            </div>
+            <div class="args">
+                <span class="chip">csv_column</span>
+                <span class="chip">json_path</span>
+                <span class="chip">json_element</span>
+            </div>
+            <div class="example">
+                <header><span>Example</span>
+                    <button class="btn" data-copy="FIND(appid, results.app_info.appid, app_name)">Copy</button>
+                </header>
+                <pre>FIND(appid, results.app_info.appid, app_name)</pre>
+            </div>
+            <div class="note">
+                The compare uses the <strong>value</strong> of the CSV column. If the JSON node is an array, it checks
+                each element.
+            </div>
+        </article>
+
+        <!-- CONCAT -->
+        <article class="card" data-keywords="concat join merge string literal single quotes pipe | plus +">
+            <div class="title">
+                <code class="inline">CONCAT(arg1, arg2, …)</code>
+                <span class="badge ok">N args</span>
+            </div>
+            <div class="desc">
+                Concatenates arguments. Each argument can be a CSV column name (its value is used) or a single-quoted
+                string literal.
+                Missing or <em>null</em> column values are treated as empty strings.
+            </div>
+            <div class="args">
+                <span class="chip">columnName</span>
+                <span class="chip">'literal'</span>
+            </div>
+            <div class="example">
+                <header><span>Example</span>
+                    <button class="btn" data-copy="CONCAT(appid, ' | ', app_name)">Copy</button>
+                </header>
+                <pre>CONCAT(appid, ' | ', app_name)</pre>
+            </div>
+            <div class="note">
+                Use single quotes for literals: <code class="inline">' - '</code>. To include a single quote inside a
+                literal, escape it as <code class="inline">\'</code>.
+            </div>
+        </article>
+
+        <!-- JSON -->
+        <article class="card" data-keywords="json path extract serialize object array value">
+            <div class="title">
+                <code class="inline">JSON(json_path)</code>
+                <span class="badge ok">1 arg</span>
+            </div>
+            <div class="desc">
+                Returns the JSON at the given path as a string (object/array/value), or <em>null</em> if the path
+                doesn’t exist.
+            </div>
+            <div class="args">
+                <span class="chip">json_path</span>
+            </div>
+            <div class="example">
+                <header><span>Example</span>
+                    <button class="btn" data-copy="JSON(results.app_info)">Copy</button>
+                </header>
+                <pre>JSON(results.app_info)</pre>
+            </div>
+        </article>
+
+    </section>
+
+    <footer>
+        Literals must be wrapped in single quotes. Column names reference the current row context.
+    </footer>
+</div>
+
+<script>
+    // Search/filter
+    const q = document.getElementById('q');
+    const cards = Array.from(document.querySelectorAll('#cards .card'));
+    const count = document.getElementById('count');
+
+    function applyFilter() {
+        const term = q.value.trim().toLowerCase();
+        let visible = 0;
+        for (const c of cards) {
+            const hay = (c.textContent + ' ' + (c.dataset.keywords || '')).toLowerCase();
+            const show = !term || hay.includes(term);
+            c.classList.toggle('hidden', !show);
+            if (show) visible++;
+        }
+        count.textContent = visible + (visible === 1 ? ' formula' : ' formulas');
+    }
+
+    q.addEventListener('input', applyFilter);
+    applyFilter();
+
+    // Copy buttons
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-copy]');
+        if (!btn) return;
+        const text = btn.getAttribute('data-copy');
+        navigator.clipboard.writeText(text).then(() => {
+            const original = btn.textContent;
+            btn.textContent = 'Copied';
+            setTimeout(() => btn.textContent = original, 900);
+        });
+    });
+</script>
 </body>
 </html>
