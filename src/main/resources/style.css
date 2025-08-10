@@ -1,0 +1,267 @@
+/* CSS */
+
+/* Root scene palette (keeps sizing intact) */
+.root {
+    -fx-base: #1e1e1e;
+    -fx-background: #1e1e1e;
+    -fx-background-color: -fx-background;
+    -fx-control-inner-background: #252526;
+    -fx-accent: #3d7dca;             /* selection/primary accent */
+    -fx-focus-color: #4799eb;        /* keyboard focus ring */
+    -fx-faint-focus-color: rgba(71,153,235,0.24);
+    -fx-text-background-color: #e6e6e6;
+    -fx-text-fill: #e6e6e6;          /* default text */
+}
+
+/* Labels and common text */
+.label {
+    -fx-text-fill: #e6e6e6;
+}
+
+/* Text input */
+.text-input, .text-field, .text-area {
+    -fx-background-color: #2d2d2d, #2d2d2d, #2d2d2d;
+    -fx-text-fill: #e6e6e6;
+    -fx-prompt-text-fill: #9a9a9a;
+    -fx-highlight-fill: rgba(71,153,235,0.35);
+    -fx-highlight-text-fill: #ffffff;
+    -fx-background-insets: 0, 1, 2;
+    -fx-background-radius: 4, 4, 4;
+    -fx-border-color: transparent;
+}
+
+.text-input:focused {
+    -fx-background-color: #2f2f2f, #2f2f2f, #2f2f2f;
+}
+
+/* Menu bar and menus */
+.menu-bar {
+    -fx-background-color: #232323;
+    -fx-text-fill: #e6e6e6;
+}
+
+/* Top-level menus (MenuBar buttons) */
+.menu-bar .menu-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #e6e6e6;
+}
+.menu-bar .menu-button .label {
+    -fx-text-fill: #e6e6e6;
+}
+.menu-bar .menu-button:hover,
+.menu-bar .menu-button:focused,
+.menu-bar .menu-button:showing {
+    -fx-background-color: rgba(61,125,202,0.20);
+}
+
+/* Menu popup items: normal, hover, focus, armed, disabled */
+.context-menu {
+    -fx-background-color: #2a2a2a;
+}
+
+.menu-item,
+.check-menu-item,
+.radio-menu-item {
+    -fx-background-color: transparent;
+    -fx-text-fill: #e6e6e6;
+}
+
+.menu-item .label,
+.check-menu-item .label,
+.radio-menu-item .label {
+    -fx-text-fill: #e6e6e6;
+}
+
+/* Hover, keyboard focus, and armed states */
+.menu-item:hover,
+.menu-item:focused,
+.menu-item:armed,
+.check-menu-item:hover,
+.check-menu-item:focused,
+.check-menu-item:armed,
+.radio-menu-item:hover,
+.radio-menu-item:focused,
+.radio-menu-item:armed {
+    -fx-background-color: rgba(61,125,202,0.25); /* subtle accent */
+}
+
+.menu-item:hover .label,
+.menu-item:focused .label,
+.menu-item:armed .label,
+.check-menu-item:hover .label,
+.check-menu-item:focused .label,
+.check-menu-item:armed .label,
+.radio-menu-item:hover .label,
+.radio-menu-item:focused .label,
+.radio-menu-item:armed .label {
+    -fx-text-fill: #ffffff;
+}
+
+/* Accelerator text (e.g., Ctrl+S) */
+.menu-item .accelerator-text {
+    -fx-text-fill: #bfbfbf;
+}
+.menu-item:hover .accelerator-text,
+.menu-item:focused .accelerator-text,
+.menu-item:armed .accelerator-text {
+    -fx-text-fill: #ffffff;
+}
+
+/* Checked/selected visuals (keeps default glyphs, just color) */
+.check-menu-item:checked .check,
+.radio-menu-item:checked .radio {
+    -fx-background-color: -fx-accent;
+}
+
+/* Disabled state */
+.menu-item:disabled,
+.check-menu-item:disabled,
+.radio-menu-item:disabled {
+    -fx-opacity: 1;                 /* keep layout stable */
+}
+.menu-item:disabled .label,
+.check-menu-item:disabled .label,
+.radio-menu-item:disabled .label,
+.menu-item:disabled .accelerator-text {
+    -fx-text-fill: #6e6e6e;
+}
+
+/* Buttons (in dialogs, etc.) */
+.button {
+    -fx-background-color: #2f2f2f;
+    -fx-text-fill: #e6e6e6;
+    -fx-background-radius: 4;
+}
+.button:hover {
+    -fx-background-color: #3a3a3a;
+}
+.button:focused {
+    -fx-background-color: #3a3a3a;
+    -fx-effect: dropshadow(gaussian, rgba(71,153,235,0.35), 6, 0.2, 0, 0);
+}
+
+/* TreeView */
+.tree-view {
+    -fx-background-color: #252526;
+    -fx-control-inner-background: #252526;
+    -fx-text-fill: #e6e6e6;
+}
+.tree-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #e6e6e6;
+}
+.tree-cell:filled:selected, .tree-cell:filled:selected:focused {
+    -fx-background-color: rgba(61,125,202,0.35);
+    -fx-text-fill: #ffffff;
+}
+.tree-cell:filled:hover {
+    -fx-background-color: rgba(255,255,255,0.05);
+}
+
+/* TableView (definitions and CSV preview) */
+.table-view {
+    -fx-background-color: #252526;
+    -fx-control-inner-background: #252526;
+    -fx-table-cell-border-color: #2e2e2e;
+    -fx-table-header-border-color: #2e2e2e;
+    -fx-padding: 0; /* keep sizing stable */
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #2a2a2a;
+}
+.table-view .column-header, .table-view .filler {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent #2e2e2e transparent;
+    -fx-border-width: 0 0 1 0;
+}
+.table-view .column-header .label {
+    -fx-text-fill: #dcdcdc;
+}
+
+/* Table rows/cells */
+.table-row-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #e6e6e6;
+}
+.table-row-cell:odd {
+    -fx-background-color: rgba(255,255,255,0.02);
+}
+.table-row-cell:selected, .table-row-cell:selected .table-cell {
+    -fx-background-color: -fx-accent;
+    -fx-text-fill: white;
+}
+.table-cell {
+    -fx-text-fill: #e6e6e6;
+    -fx-border-color: transparent transparent #2e2e2e transparent;
+    -fx-border-width: 0 0 1 0;
+}
+.table-row-cell:hover {
+    -fx-background-color: rgba(255,255,255,0.06);
+}
+.table-row-cell:selected .check-box .box {
+    -fx-border-color: white;
+}
+.table-row-cell:selected .check-box:selected .box {
+    -fx-border-color: white;
+}
+.table-row-cell:selected .check-box:selected .mark {
+    -fx-background-color: white;
+}
+
+/* CheckBox and CheckBoxTableCell */
+.check-box .box {
+    -fx-background-color: transparent;
+    -fx-border-color: -fx-accent;
+}
+.check-box:selected .mark {
+    -fx-background-color: white;
+}
+.check-box:selected .box {
+    -fx-background-color: transparent;
+    -fx-border-color: -fx-accent;
+}
+
+/* Placeholders in TableView (e.g., "No columns", "No rows", "Error") */
+.table-view .placeholder .label {
+    -fx-text-fill: #bdbdbd;
+}
+
+/* ProgressIndicator (used as placeholder while preview loads) */
+.progress-indicator {
+    -fx-progress-color: -fx-accent;
+}
+.progress-indicator .indicator {
+    -fx-background-color: transparent;
+}
+
+/* ScrollBars */
+.scroll-bar:horizontal, .scroll-bar:vertical {
+    -fx-background-color: #1f1f1f;
+}
+.scroll-bar .track {
+    -fx-background-color: #1f1f1f;
+}
+.scroll-bar .thumb {
+    -fx-background-color: #3a3a3a;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4;
+}
+.scroll-bar .thumb:hover {
+    -fx-background-color: #4a4a4a;
+}
+
+/* Tooltips */
+.tooltip {
+    -fx-background-color: #2a2a2a;
+    -fx-text-fill: #e6e6e6;
+    -fx-background-radius: 4;
+    -fx-padding: 6 8 6 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.6), 10, 0.2, 0, 2);
+}
+
+/* Selection highlight for general controls */
+:focused {
+    -fx-focus-color: #4799eb;
+    -fx-faint-focus-color: rgba(71,153,235,0.24);
+}

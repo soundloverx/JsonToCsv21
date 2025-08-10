@@ -17,6 +17,7 @@ import org.overb.jsontocsv.App;
 import org.overb.jsontocsv.dto.CsvColumnDefinition;
 import org.overb.jsontocsv.enums.ColumnTypes;
 import org.overb.jsontocsv.libs.CustomStringUtils;
+import org.overb.jsontocsv.libs.ThemeManager;
 import org.overb.jsontocsv.libs.UiHelper;
 
 import java.awt.*;
@@ -90,7 +91,7 @@ public class EditColumn {
             UiHelper.messageBox(window, Alert.AlertType.ERROR, "Error", "Column name cannot be empty.");
             return;
         }
-        if (Preferences.applicationProperties.isColumnsSnakeCase()) {
+        if (App.properties.isColumnsSnakeCase()) {
             name = CustomStringUtils.generateColumnName(name);
             txtColumnName.setText(name);
         }
@@ -140,7 +141,11 @@ public class EditColumn {
             stage.initOwner(owner);
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setTitle((definitionToEdit == null ? "Add " : "Edit ") + " column...");
-            stage.setScene(new Scene(pane));
+            Scene scene = new Scene(pane);
+            if (App.properties.isDarkMode()) {
+                ThemeManager.setDark(scene, true);
+            }
+            stage.setScene(scene);
             UiHelper.centerToOwner(owner, stage);
 
             EditColumn form = loader.getController();

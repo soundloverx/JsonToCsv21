@@ -14,11 +14,13 @@ import javafx.stage.Window;
 import org.overb.jsontocsv.App;
 import org.overb.jsontocsv.elements.ApplicationProperties;
 import org.overb.jsontocsv.enums.CsvNullStyles;
+import org.overb.jsontocsv.libs.ThemeManager;
 import org.overb.jsontocsv.libs.UiHelper;
+
+import java.util.Objects;
 
 public class Preferences {
 
-    public static ApplicationProperties applicationProperties = ApplicationProperties.load();
     @FXML
     public TextField txtLimit;
     @FXML
@@ -33,20 +35,26 @@ public class Preferences {
     public RadioButton cbNullEmpty;
     @FXML
     public RadioButton cbNullNull;
+    @FXML
+    public CheckBox cbDarkMode;
     private Stage dialogStage;
     private Window window;
 
     public void initialize() {
-        cbAutoConvert.setSelected(applicationProperties.isAutoConvertOnLoad());
-        cbSnakeCase.setSelected(applicationProperties.isColumnsSnakeCase());
-        cbLimitPreview.setSelected(applicationProperties.isLimitedPreviewRows());
+        cbDarkMode.setOnAction(event -> {
+            ThemeManager.toggleAll();
+        });
+        cbAutoConvert.setSelected(App.properties.isAutoConvertOnLoad());
+        cbSnakeCase.setSelected(App.properties.isColumnsSnakeCase());
+        cbLimitPreview.setSelected(App.properties.isLimitedPreviewRows());
         txtLimit.setDisable(!cbLimitPreview.isSelected());
-        txtLimit.setText("" + applicationProperties.getPreviewLimit());
-        if (applicationProperties.getNullType() == CsvNullStyles.EMPTY) {
+        txtLimit.setText("" + App.properties.getPreviewLimit());
+        if (App.properties.getNullType() == CsvNullStyles.EMPTY) {
             cbNullEmpty.setSelected(true);
         } else {
             cbNullNull.setSelected(true);
         }
+        cbDarkMode.setSelected(App.properties.isDarkMode());
 
         cbLimitPreview.setOnAction(event -> {
             txtLimit.setDisable(!cbLimitPreview.isSelected());
@@ -61,9 +69,9 @@ public class Preferences {
     @FXML
     private void onOk() {
         try {
-            applicationProperties.setAutoConvertOnLoad(cbAutoConvert.isSelected());
-            applicationProperties.setColumnsSnakeCase(cbSnakeCase.isSelected());
-            applicationProperties.setLimitedPreviewRows(cbLimitPreview.isSelected());
+            App.properties.setAutoConvertOnLoad(cbAutoConvert.isSelected());
+            App.properties.setColumnsSnakeCase(cbSnakeCase.isSelected());
+            App.properties.setLimitedPreviewRows(cbLimitPreview.isSelected());
             int limit;
             try {
                 limit = Integer.parseInt(txtLimit.getText());
@@ -71,9 +79,10 @@ public class Preferences {
                 limit = 100;
                 txtLimit.setText("100");
             }
-            applicationProperties.setPreviewLimit(limit);
-            applicationProperties.setNullType(cbNullEmpty.isSelected() ? CsvNullStyles.EMPTY : CsvNullStyles.LITERAL_NULL);
-            applicationProperties.save();
+            App.properties.setPreviewLimit(limit);
+            App.properties.setNullType(cbNullEmpty.isSelected() ? CsvNullStyles.EMPTY : CsvNullStyles.LITERAL_NULL);
+            App.properties.setDarkMode(cbDarkMode.isSelected());
+            App.properties.save();
         } catch (Exception error) {
             UiHelper.errorBox(window, error);
         }
@@ -94,7 +103,11 @@ public class Preferences {
             stage.initOwner(owner);
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setTitle("Preferences");
-            stage.setScene(new Scene(pane));
+            Scene scene = new Scene(pane);
+            if (App.properties.isDarkMode()) {
+                ThemeManager.setDark(scene, true);
+            }
+            stage.setScene(scene);
             stage.setResizable(false);
             UiHelper.centerToOwner(owner, stage);
 

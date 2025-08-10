@@ -17,6 +17,7 @@ import javafx.scene.input.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import javafx.util.Callback;
+import org.overb.jsontocsv.App;
 import org.overb.jsontocsv.dto.CsvColumnDefinition;
 import org.overb.jsontocsv.dto.CsvDefinitionsBundle;
 import org.overb.jsontocsv.dto.JsonDragNode;
@@ -134,7 +135,7 @@ public class Main {
             ObservableList<CsvColumnDefinition> csvDefinitions = tblColumnDefinitions.getItems();
             for (JsonDragNode item : items) {
                 String csvColumn = item.node();
-                if (Preferences.applicationProperties.isColumnsSnakeCase()) {
+                if (App.properties.isColumnsSnakeCase()) {
                     csvColumn = CustomStringUtils.generateColumnName(item.node());
                 }
 
@@ -221,11 +222,10 @@ public class Main {
         File file = UiHelper.openFileChooser(window, FileDialogTypes.LOAD, "Open JSON file", new FileChooser.ExtensionFilter("JSON Files (*.json)", "*.json"));
         if (file == null) return;
         try {
-            resetEverything();
             setControlsEnabled(false);
             loadedJson = JsonIo.loadJsonFile(file);
             loadJsonSchemaIntoTree();
-            if (Preferences.applicationProperties.isAutoConvertOnLoad()) {
+            if (App.properties.isAutoConvertOnLoad()) {
                 parseJsonIntoCsvColumns(loadedJson);
             }
         } catch (Exception error) {
@@ -249,7 +249,7 @@ public class Main {
                 .toList();
         setControlsEnabled(false);
         try (CSVWriter writer = new CSVWriter(new FileWriter(file), ',', ICSVWriter.NO_QUOTE_CHARACTER, ICSVWriter.NO_ESCAPE_CHARACTER, "\n")) {
-            var rowConsumer = CsvRowConsumer.rowWriter(writer, Preferences.applicationProperties.getNullType());
+            var rowConsumer = CsvRowConsumer.rowWriter(writer, App.properties.getNullType());
             rowConsumer.accept(headers.toArray(new String[0]));
             long rows = CsvRowExpander.streamCsvRows(loadedJson, txtRoot.getText(), csvColumnDefinitions, headers, rowConsumer);
             UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info", "Saved " + rows + " rows to " + file.getName());
@@ -304,8 +304,10 @@ public class Main {
     private void parseJsonIntoCsvColumns(JsonNode rootNode) throws Exception {
         if (JsonSchemaService.isShallow(rootNode)) {
             loadSimpleJson(rootNode);
-        } else {
+        } else if (csvColumnDefinitions.isEmpty()) {
             UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info", "You have loaded a nested JSON.\nYou have to manually configure the CSV columns.\nRemember to fill in the root node name.");
+        } else {
+            generateCsvPreview();
         }
     }
 
@@ -319,35 +321,12 @@ public class Main {
         }
         for (String columnName : columns) {
             String csvColumn = columnName;
-            if (Preferences.applicationProperties.isColumnsSnakeCase()) {
+            if (App.properties.isColumnsSnakeCase()) {
                 csvColumn = CustomStringUtils.generateColumnName(columnName);
             }
             csvColumnDefinitions.add(new CsvColumnDefinition(csvColumn, columnName, ColumnTypes.DEFAULT));
         }
     }
-
-//    private void generateCsvPreview() {
-//        if (loadedJson == null) return;
-//        tblCsvPreview.getColumns().clear();
-//        if (csvColumnDefinitions.isEmpty()) {
-//            return;
-//        }
-//        for (CsvColumnDefinition def : csvColumnDefinitions) {
-//            TableColumn<Map<String, String>, String> col = new TableColumn<>(def.getColumnName());
-//            col.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().get(def.getColumnName())));
-//            col.setReorderable(false);
-//            tblCsvPreview.getColumns().add(col);
-//        }
-//        try {
-//            int limit = Preferences.applicationProperties.getPreviewLimit();
-//            if (!Preferences.applicationProperties.isLimitedPreviewRows()) {
-//                limit = 0;
-//            }
-//            tblCsvPreview.setItems(CsvRowExpander.previewCsvRows(loadedJson, txtRoot.getText(), csvColumnDefinitions, limit));
-//        } catch (Exception e) {
-//            UiHelper.errorBox(window, e);
-//        }
-//    }
 
     private void generateCsvPreview() {
         if (loadedJson == null) return;
@@ -366,12 +345,12 @@ public class Main {
         }
         final String root = txtRoot.getText();
         final List<CsvColumnDefinition> defsSnapshot = new ArrayList<>(csvColumnDefinitions);
-        final int limit = Preferences.applicationProperties.isLimitedPreviewRows() ? Preferences.applicationProperties.getPreviewLimit() : 0;
+        final int limit = App.properties.isLimitedPreviewRows() ? App.properties.getPreviewLimit() : 0;
         if (currentPreviewTask != null && currentPreviewTask.isRunning()) {
             currentPreviewTask.cancel();
         }
         tblCsvPreview.setPlaceholder(new ProgressIndicator());
-        currentPreviewTask = new javafx.concurrent.Task<>() {
+        currentPreviewTask = new Task<>() {
             @Override
             protected ObservableList<Map<String, String>> call() {
                 return CsvRowExpander.previewCsvRows(loadedJson, root, defsSnapshot, limit);

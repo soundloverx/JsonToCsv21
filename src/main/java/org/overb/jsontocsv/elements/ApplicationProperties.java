@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.overb.jsontocsv.enums.CsvNullStyles;
 import org.overb.jsontocsv.libs.JsonIo;
+import org.overb.jsontocsv.libs.ThemeManager;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -33,6 +34,9 @@ public class ApplicationProperties {
     @JsonProperty("null_type")
     private CsvNullStyles nullType;
 
+    @JsonProperty("dark_mode")
+    private boolean darkMode;
+
     public void save() throws IOException {
         Path configFile = getConfigPath();
         Files.createDirectories(configFile.getParent());
@@ -57,7 +61,11 @@ public class ApplicationProperties {
             Path configFile = getConfigPath();
             if (Files.exists(configFile)) {
                 try (var r = Files.newBufferedReader(configFile, StandardCharsets.UTF_8)) {
-                    return JsonIo.MAPPER.readValue(r, ApplicationProperties.class);
+                    ApplicationProperties properties = JsonIo.MAPPER.readValue(r, ApplicationProperties.class);
+                    if(properties.isDarkMode()){
+                        ThemeManager.setDarkForAll(true);
+                    }
+                    if (properties != null) return properties;
                 }
             }
         } catch (IOException e) {
@@ -66,8 +74,9 @@ public class ApplicationProperties {
         defaultProperties.setAutoConvertOnLoad(true);
         defaultProperties.setColumnsSnakeCase(true);
         defaultProperties.setLimitedPreviewRows(true);
-        defaultProperties.setNullType(CsvNullStyles.EMPTY);
         defaultProperties.setPreviewLimit(100);
+        defaultProperties.setNullType(CsvNullStyles.EMPTY);
+        defaultProperties.setDarkMode(false);
         return defaultProperties;
     }
 }
