@@ -13,10 +13,7 @@ import java.util.regex.Pattern;
 public class FunctionsHelper {
     private static final DateTimeFormatter timestampFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    static List<Map<String, String>> evaluateFormula(Map<String, String> base,
-                                                     JsonNode loadedJson,
-                                                     CsvColumnDefinition columnDefinition,
-                                                     JsonNode localBase) {
+    static List<Map<String, String>> evaluateFormula(Map<String, String> base, JsonNode loadedJson, CsvColumnDefinition columnDefinition, JsonNode localBase) {
 //        final Pattern FUNCTION_PATTERN = Pattern.compile("\\s*(\\w+)\\s*\\(\\s*([^)]*)\\s*\\)\\s*");
         String formula = columnDefinition.getJsonSource();
         Matcher functionMatcher = Pattern.compile("\\s*(\\w+)\\s*\\(\\s*(.*?)\\s*\\)\\s*").matcher(formula);

@@ -24,15 +24,15 @@ public class CsvColumnDefinitionDeserializer extends JsonDeserializer<CsvColumnD
         String jsonColumn = node.hasNonNull("json") ? node.get("json").asText() : null;
         ColumnTypes type = null;
         if (node.hasNonNull("type")) {
-            String t = node.get("type").asText().toUpperCase();
+            String text = node.get("type").asText().toUpperCase();
             try {
-                type = ColumnTypes.valueOf(t);
+                type = ColumnTypes.valueOf(text);
             } catch (IllegalArgumentException ignored) {
             }
         }
-        CsvColumnDefinition def = new CsvColumnDefinition(csvColumn, jsonColumn, type);
-        def.setCustom(type != ColumnTypes.DEFAULT);
-        return def;
+        CsvColumnDefinition csvColumnDefinition = new CsvColumnDefinition(csvColumn, jsonColumn, type);
+        csvColumnDefinition.setCustom(type != ColumnTypes.DEFAULT);
+        return csvColumnDefinition;
     }
 }
 

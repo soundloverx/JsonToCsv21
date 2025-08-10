@@ -15,8 +15,7 @@ import java.util.function.Consumer;
 
 public final class CsvRowExpander {
 
-    public static ObservableList<Map<String, String>> previewCsvRows(JsonNode loadedJson, String rootPath,
-                                                                     List<CsvColumnDefinition> definitions, int limit) {
+    public static ObservableList<Map<String, String>> previewCsvRows(JsonNode loadedJson, String rootPath, List<CsvColumnDefinition> definitions, int limit) {
         ObservableList<Map<String, String>> rows = FXCollections.observableArrayList();
         if (definitions == null || definitions.isEmpty() || loadedJson == null) return rows;
 
@@ -42,8 +41,7 @@ public final class CsvRowExpander {
         return rows;
     }
 
-    public static long streamCsvRows(JsonNode loadedJson, String rootPath, List<CsvColumnDefinition> definitions,
-                                     List<String> headers, Consumer<String[]> rowConsumer) {
+    public static long streamCsvRows(JsonNode loadedJson, String rootPath, List<CsvColumnDefinition> definitions, List<String> headers, Consumer<String[]> rowConsumer) {
         if (definitions == null || definitions.isEmpty() || loadedJson == null) {
             return 0L;
         }
@@ -70,8 +68,7 @@ public final class CsvRowExpander {
         return List.of(root);
     }
 
-    private static void streamRecord(JsonNode loadedJson, JsonNode record, List<CsvColumnDefinition> definitions,
-                                     List<String> headers, Consumer<String[]> rowConsumer) {
+    private static void streamRecord(JsonNode loadedJson, JsonNode record, List<CsvColumnDefinition> definitions, List<String> headers, Consumer<String[]> rowConsumer) {
         Map<String, List<CsvColumnDefinition>> groupedNonFormulas = new LinkedHashMap<>();
         Map<String, List<CsvColumnDefinition>> groupedFormulas = new LinkedHashMap<>();
         List<CsvColumnDefinition> scalars = new ArrayList<>();

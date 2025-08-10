@@ -8,9 +8,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Helper storing the ObjectSchema, ArraySchema and PrimitiveSchema classes used by JsonService to build the schema of a loaded json
- */
 public class JsonSchemaHelper {
 
     public sealed interface Schema permits ObjectSchema, ArraySchema, PrimitiveSchema {
@@ -85,7 +82,6 @@ public class JsonSchemaHelper {
             return array;
         }
     }
-
 
     public static final class PrimitiveSchema implements Schema {
         @Override

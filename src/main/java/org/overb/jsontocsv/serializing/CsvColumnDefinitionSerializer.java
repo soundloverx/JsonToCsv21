@@ -10,11 +10,11 @@ import java.io.IOException;
 public class CsvColumnDefinitionSerializer extends JsonSerializer<CsvColumnDefinition> {
 
     @Override
-    public void serialize(CsvColumnDefinition value, JsonGenerator jsonGenerator, SerializerProvider serializers) throws IOException {
+    public void serialize(CsvColumnDefinition csvColumnDefinition, JsonGenerator jsonGenerator, SerializerProvider serializers) throws IOException {
         jsonGenerator.writeStartObject();
-        jsonGenerator.writeStringField("csv", value.getColumnName());
-        jsonGenerator.writeStringField("json", value.getJsonSource());
-        jsonGenerator.writeStringField("type", value.getType() != null ? value.getType().name() : null);
+        jsonGenerator.writeStringField("csv", csvColumnDefinition.getColumnName());
+        jsonGenerator.writeStringField("json", csvColumnDefinition.getJsonSource());
+        jsonGenerator.writeStringField("type", csvColumnDefinition.getType() != null ? csvColumnDefinition.getType().name() : null);
         jsonGenerator.writeEndObject();
     }
 }
