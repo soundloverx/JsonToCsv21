@@ -339,7 +339,7 @@ public class Main {
         tblCsvPreview.getColumns().clear();
         for (CsvColumnDefinition def : csvColumnDefinitions) {
             TableColumn<Map<String, String>, String> col = new TableColumn<>(def.getColumnName());
-            col.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().get(def.getColumnName())));
+            col.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().get(def.getColumnName())));
             col.setReorderable(false);
             tblCsvPreview.getColumns().add(col);
         }
