@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.overb.jsontocsv.enums.CsvNullStyles;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,6 +31,9 @@ public class ApplicationProperties {
 
     @JsonProperty("limit_preview_rows")
     private int previewLimit;
+
+    @JsonProperty("null_type")
+    private CsvNullStyles nullType;
 
     public void save() throws IOException {
         Path file = getConfigPath();
@@ -59,6 +63,7 @@ public class ApplicationProperties {
         defaultProperties.setAutoConvertOnLoad(true);
         defaultProperties.setColumnsSnakeCase(true);
         defaultProperties.setLimitedPreviewRows(true);
+        defaultProperties.setNullType(CsvNullStyles.EMPTY);
         defaultProperties.setPreviewLimit(100);
         return defaultProperties;
     }

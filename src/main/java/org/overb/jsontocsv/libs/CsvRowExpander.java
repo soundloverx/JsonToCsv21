@@ -85,80 +85,76 @@ public final class CsvRowExpander {
             }
         }
 
-        List<Map<String, String>> contexts = new ArrayList<>();
-        contexts.add(new LinkedHashMap<>());
-
-        // Non-formula scalars
+        List<Map<String, String>> rowsInProgress = new ArrayList<>();
+        rowsInProgress.add(new LinkedHashMap<>());
         for (CsvColumnDefinition def : scalars) {
             List<Map<String, String>> next = new ArrayList<>();
-            for (Map<String, String> ctx : contexts) {
-                // Use the unified expander with the record as base and the absolute path
-                next.addAll(expandNonFormula(ctx, loadedJson, record, def, def.getJsonSource()));
+            for (Map<String, String> rowInProgress : rowsInProgress) {
+                next.addAll(expandNonFormula(rowInProgress, loadedJson, record, def, def.getJsonSource()));
             }
-            contexts = next;
+            rowsInProgress = next;
         }
-
-        // Stable group order
         List<String> groupOrder = new ArrayList<>(groupedNonFormulas.keySet());
         for (String k : groupedFormulas.keySet()) {
             if (!groupOrder.contains(k)) groupOrder.add(k);
         }
-        for (Map<String, String> ctx : contexts) {
+        for (Map<String, String> rowInProgress : rowsInProgress) {
             emitRowsForGroups(loadedJson, record, groupOrder, 0, groupedNonFormulas, groupedFormulas,
-                    scalarFormulas, ctx, headers, rowConsumer);
+                    scalarFormulas, rowInProgress, headers, rowConsumer);
         }
     }
 
-    private static void emitRowsForGroups(JsonNode loadedJson, JsonNode record, List<String> groupOrder, int idx,
+    private static void emitRowsForGroups(JsonNode loadedJson, JsonNode record, List<String> groupOrder, int rowIndex,
                                           Map<String, List<CsvColumnDefinition>> groupedNonFormulas,
                                           Map<String, List<CsvColumnDefinition>> groupedFormulas,
                                           List<CsvColumnDefinition> scalarFormulas,
-                                          Map<String, String> ctx, List<String> headers,
+                                          Map<String, String> rowInProgress,
+                                          List<String> headers,
                                           java.util.function.Consumer<String[]> rowConsumer) {
-        if (idx >= groupOrder.size()) {
-            List<Map<String, String>> afterScalarList = applyFormulasAccum(ctx, loadedJson, record, record, scalarFormulas);
-            for (Map<String, String> rowCtx : afterScalarList) {
-                rowConsumer.accept(buildRow(rowCtx, headers));
+        if (rowIndex >= groupOrder.size()) {
+            List<Map<String, String>> afterScalarList = applyFormulasAccum(rowInProgress, loadedJson, record, record, scalarFormulas);
+            for (Map<String, String> row : afterScalarList) {
+                rowConsumer.accept(buildCsvRow(row, headers));
             }
             return;
         }
 
-        String ancestorPath = groupOrder.get(idx);
+        String ancestorPath = groupOrder.get(rowIndex);
         List<CsvColumnDefinition> nonFormulas = groupedNonFormulas.getOrDefault(ancestorPath, List.of());
         List<CsvColumnDefinition> formulas = groupedFormulas.getOrDefault(ancestorPath, List.of());
 
         JsonNode arrayNode = JsonPath.navigate(record, ancestorPath);
         if (!arrayNode.isArray() || arrayNode.isEmpty()) {
-            Map<String, String> withNulls = new LinkedHashMap<>(ctx);
+            Map<String, String> withNulls = new LinkedHashMap<>(rowInProgress);
             for (CsvColumnDefinition def : nonFormulas) {
                 withNulls = FunctionsHelper.putValue(withNulls, def.getColumnName(), null);
             }
             List<Map<String, String>> afterGroupList = applyFormulasAccum(withNulls, loadedJson, record, null, formulas);
-            for (Map<String, String> nextCtx : afterGroupList) {
-                emitRowsForGroups(loadedJson, record, groupOrder, idx + 1,
-                        groupedNonFormulas, groupedFormulas, scalarFormulas, nextCtx, headers, rowConsumer);
+            for (Map<String, String> nextRow : afterGroupList) {
+                emitRowsForGroups(loadedJson, record, groupOrder, rowIndex + 1,
+                        groupedNonFormulas, groupedFormulas, scalarFormulas, nextRow, headers, rowConsumer);
             }
             return;
         }
 
         for (JsonNode element : arrayNode) {
-            List<Map<String, String>> elementContexts = new ArrayList<>();
-            elementContexts.add(new LinkedHashMap<>(ctx));
+            List<Map<String, String>> elementRows = new ArrayList<>();
+            elementRows.add(new LinkedHashMap<>(rowInProgress));
 
-            for (CsvColumnDefinition def : nonFormulas) {
-                String relPath = JsonPath.relativePath(def.getJsonSource(), ancestorPath);
+            for (CsvColumnDefinition csvColumnDefinition : nonFormulas) {
+                String relPath = JsonPath.relativePath(csvColumnDefinition.getJsonSource(), ancestorPath);
                 List<Map<String, String>> next = new ArrayList<>();
-                for (Map<String, String> ec : elementContexts) {
-                    next.addAll(expandNonFormula(ec, loadedJson, element, def, relPath));
+                for (Map<String, String> row : elementRows) {
+                    next.addAll(expandNonFormula(row, loadedJson, element, csvColumnDefinition, relPath));
                 }
-                elementContexts = next;
+                elementRows = next;
             }
 
-            for (Map<String, String> ec : elementContexts) {
-                List<Map<String, String>> afterGroupList = applyFormulasAccum(ec, loadedJson, record, element, formulas);
-                for (Map<String, String> nextCtx : afterGroupList) {
-                    emitRowsForGroups(loadedJson, record, groupOrder, idx + 1,
-                            groupedNonFormulas, groupedFormulas, scalarFormulas, nextCtx, headers, rowConsumer);
+            for (Map<String, String> row : elementRows) {
+                List<Map<String, String>> afterGroupList = applyFormulasAccum(row, loadedJson, record, element, formulas);
+                for (Map<String, String> nextRow : afterGroupList) {
+                    emitRowsForGroups(loadedJson, record, groupOrder, rowIndex + 1,
+                            groupedNonFormulas, groupedFormulas, scalarFormulas, nextRow, headers, rowConsumer);
                 }
             }
         }
@@ -166,20 +162,20 @@ public final class CsvRowExpander {
 
     private static List<Map<String, String>> applyFormulasAccum(Map<String, String> base, JsonNode loadedJson, JsonNode record,
                                                                 JsonNode localBase, List<CsvColumnDefinition> formulas) {
-        List<Map<String, String>> contexts = List.of(base);
+        List<Map<String, String>> rowsInProgress = List.of(base);
         for (CsvColumnDefinition f : formulas) {
             List<Map<String, String>> next = new ArrayList<>();
-            for (Map<String, String> ctx : contexts) {
-                List<Map<String, String>> res = FunctionsHelper.evaluateFormula(ctx, loadedJson, f, localBase);
+            for (Map<String, String> rowInProgress : rowsInProgress) {
+                List<Map<String, String>> res = FunctionsHelper.evaluateFormula(rowInProgress, loadedJson, f, localBase);
                 if (res.isEmpty()) {
-                    next.add(ctx); // no-op if function returns nothing
+                    next.add(rowInProgress);
                 } else {
                     next.addAll(res);
                 }
             }
-            contexts = next;
+            rowsInProgress = next;
         }
-        return contexts;
+        return rowsInProgress;
     }
 
 
@@ -199,8 +195,8 @@ public final class CsvRowExpander {
             return List.of(FunctionsHelper.putValue(base, columnDefinition.getColumnName(), null));
         }
         List<Map<String, String>> out = new ArrayList<>(found.size());
-        for (JsonNode n : found) {
-            out.add(FunctionsHelper.putValue(base, columnDefinition.getColumnName(), n.isValueNode() ? n.asText() : n.toString()));
+        for (JsonNode node : found) {
+            out.add(FunctionsHelper.putValue(base, columnDefinition.getColumnName(), node.isValueNode() ? node.asText() : node.toString()));
         }
         return out;
     }
@@ -211,10 +207,10 @@ public final class CsvRowExpander {
         return headers;
     }
 
-    private static String[] buildRow(Map<String, String> context, List<String> headers) {
+    private static String[] buildCsvRow(Map<String, String> rowInProgress, List<String> headers) {
         String[] row = new String[headers.size()];
         for (int i = 0; i < headers.size(); i++) {
-            row[i] = context.get(headers.get(i)); // keep null as null
+            row[i] = rowInProgress.get(headers.get(i));
         }
         return row;
     }

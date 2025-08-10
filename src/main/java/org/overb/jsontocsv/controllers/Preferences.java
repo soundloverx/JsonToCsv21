@@ -10,6 +10,7 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.overb.jsontocsv.App;
 import org.overb.jsontocsv.elements.ApplicationProperties;
+import org.overb.jsontocsv.enums.CsvNullStyles;
 import org.overb.jsontocsv.libs.UiHelper;
 
 public class Preferences {
@@ -23,6 +24,12 @@ public class Preferences {
     public CheckBox cbSnakeCase;
     @FXML
     public CheckBox cbAutoConvert;
+    @FXML
+    public ToggleGroup toggleNullTypeGroup;
+    @FXML
+    public RadioButton cbNullEmpty;
+    @FXML
+    public RadioButton cbNullNull;
     private Stage dialogStage;
     private Window window;
 
@@ -32,6 +39,11 @@ public class Preferences {
         cbLimitPreview.setSelected(applicationProperties.isLimitedPreviewRows());
         txtLimit.setDisable(!cbLimitPreview.isSelected());
         txtLimit.setText("" + applicationProperties.getPreviewLimit());
+        if (applicationProperties.getNullType() == CsvNullStyles.EMPTY) {
+            cbNullEmpty.setSelected(true);
+        } else {
+            cbNullNull.setSelected(true);
+        }
 
         cbLimitPreview.setOnAction(event -> {
             txtLimit.setDisable(!cbLimitPreview.isSelected());
@@ -57,6 +69,7 @@ public class Preferences {
                 txtLimit.setText("100");
             }
             applicationProperties.setPreviewLimit(limit);
+            applicationProperties.setNullType(cbNullEmpty.isSelected() ? CsvNullStyles.EMPTY : CsvNullStyles.LITERAL_NULL);
             applicationProperties.save();
         } catch (Exception error) {
             UiHelper.errorBox(window, error);

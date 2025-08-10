@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.opencsv.CSVWriter;
+import com.opencsv.ICSVWriter;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -19,6 +20,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import javafx.util.Callback;
 import org.overb.jsontocsv.dto.CsvColumnDefinition;
+import org.overb.jsontocsv.dto.CsvDefinitionsBundle;
 import org.overb.jsontocsv.dto.JsonDragNode;
 import org.overb.jsontocsv.dto.NamedSchema;
 import org.overb.jsontocsv.elements.NamedSchemaTreeCell;
@@ -255,9 +257,10 @@ public class Main {
         tblColumnDefinitions.setDisable(true);
         tblCsvPreview.setDisable(true);
         tvJsonSchema.setDisable(true);
-        try (CSVWriter writer = new CSVWriter(new FileWriter(file))) {
-            writer.writeNext(headers.toArray(new String[0]));
-            long rows = CsvRowExpander.streamCsvRows(loadedJson, txtRoot.getText(), csvColumnDefinitions, headers, writer::writeNext);
+        try (CSVWriter writer = new CSVWriter(new FileWriter(file), ',', ICSVWriter.NO_QUOTE_CHARACTER, ICSVWriter.NO_ESCAPE_CHARACTER, "\n")) {
+            var rowConsumer = CsvRowConsumer.rowWriter(writer, Preferences.applicationProperties.getNullType());
+            rowConsumer.accept(headers.toArray(new String[0]));
+            long rows = CsvRowExpander.streamCsvRows(loadedJson, txtRoot.getText(), csvColumnDefinitions, headers, rowConsumer);
             UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info", "Saved " + rows + " rows to " + file.getName());
         } catch (Exception error) {
             UiHelper.errorBox(window, error);
@@ -305,7 +308,7 @@ public class Main {
     private void parseJsonIntoCsvColumns(JsonNode rootNode) throws Exception {
         if (JsonSchemaService.isShallow(rootNode)) {
             loadSimpleJson(rootNode);
-        } else if (rootNode.isArray() && !rootNode.isEmpty()) {
+        } else {
             UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info", "You have loaded a nested JSON.\nYou have to manually configure the CSV columns.\nRemember to fill in the root node name.");
         }
     }
@@ -359,14 +362,13 @@ public class Main {
         tvJsonSchema.setDisable(true);
         try {
             ObjectMapper mapper = new ObjectMapper();
-            List<CsvColumnDefinition> loaded = mapper.readValue(
-                    file,
-                    new TypeReference<List<CsvColumnDefinition>>() {
-                    }
-            );
-
+            JsonNode node = mapper.readTree(file);
+            txtRoot.setText(node.hasNonNull("root") ? node.get("root").asText() : "");
+            JsonNode defsNode = node.get("definitions");
             csvColumnDefinitions.clear();
-            csvColumnDefinitions.addAll(loaded);
+            if (defsNode != null && defsNode.isArray()) {
+                csvColumnDefinitions.setAll(Arrays.asList(mapper.treeToValue(defsNode, CsvColumnDefinition[].class)));
+            }
             tblColumnDefinitions.refresh();
             generateCsvPreview();
         } catch (Exception error) {
@@ -395,8 +397,8 @@ public class Main {
         tvJsonSchema.setDisable(true);
         try {
             ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
-            mapper.writeValue(file, new ArrayList<>(csvColumnDefinitions));
-//            UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info", "Saved " + csvColumnDefinitions.size() + " column definitions to " + file.getName());
+            CsvDefinitionsBundle toSave = new CsvDefinitionsBundle(txtRoot.getText(), csvColumnDefinitions);
+            mapper.writerWithDefaultPrettyPrinter().writeValue(file, toSave);
         } catch (Exception error) {
             UiHelper.errorBox(window, error);
         } finally {
