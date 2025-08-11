@@ -39,7 +39,7 @@ public class ApplicationProperties {
     private boolean darkMode;
 
     @JsonIgnore
-    private final String updateStatusFileLink = "https://mysflsncxkjf.skd/jjsod.json";
+    private final String updateStatusFileLink = "http://10.58.13.38/json2csv/status.json";
 
     public void save() throws IOException {
         Path configFile = getConfigPath();
