@@ -8,6 +8,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.image.Image;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -102,6 +103,7 @@ public class Preferences {
             Stage stage = new Stage();
             stage.initOwner(owner);
             stage.initModality(Modality.APPLICATION_MODAL);
+            stage.getIcons().add(new Image(Objects.requireNonNull(App.class.getResourceAsStream("/icons/j2c-64.png"))));
             stage.setTitle("Preferences");
             Scene scene = new Scene(pane);
             if (App.properties.isDarkMode()) {

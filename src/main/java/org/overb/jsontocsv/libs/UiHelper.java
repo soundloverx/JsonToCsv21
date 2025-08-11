@@ -4,6 +4,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.TextArea;
+import javafx.scene.image.Image;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
@@ -11,15 +12,20 @@ import javafx.stage.PopupWindow;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.overb.jsontocsv.App;
 import org.overb.jsontocsv.enums.FileDialogTypes;
 
 import java.io.File;
+import java.util.Objects;
 
 public class UiHelper {
 
     public static void messageBox(Window owner, AlertType alertType, String title, String content) {
         Alert alert = new Alert(alertType);
         alert.initOwner(owner);
+        ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().add(
+                new Image(Objects.requireNonNull(App.class.getResourceAsStream("/icons/j2c-64.png")))
+        );
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
@@ -30,6 +36,9 @@ public class UiHelper {
     public static void errorBox(Window owner, Exception error) {
         Alert alert = new Alert(AlertType.ERROR);
         alert.initOwner(owner);
+        ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().add(
+                new Image(Objects.requireNonNull(App.class.getResourceAsStream("/icons/j2c-64.png")))
+        );
         alert.setTitle("Error");
         alert.setHeaderText(null);
         alert.setContentText(error.getMessage());

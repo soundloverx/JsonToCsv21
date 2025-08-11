@@ -9,6 +9,7 @@ import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -26,6 +27,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Objects;
 
 public class EditColumn {
     @FXML
@@ -139,6 +141,7 @@ public class EditColumn {
 
             Stage stage = new Stage();
             stage.initOwner(owner);
+            stage.getIcons().add(new Image(Objects.requireNonNull(App.class.getResourceAsStream("/icons/j2c-64.png"))));
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setTitle((definitionToEdit == null ? "Add " : "Edit ") + " column...");
             Scene scene = new Scene(pane);

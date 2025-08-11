@@ -68,12 +68,38 @@
             padding: 32px 20px 20px;
         }
 
-        .logo {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, var(--accent), var(--accent-2));
-            box-shadow: var(--shadow);
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start; /* align all items to the left */
+            gap: 16px;
+            padding: 8px 16px 8px 24px;
+        }
+
+        .header .left,
+        .header .center,
+        .header .right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Don't let the center grow; keep natural width */
+        .header .center {
+            flex: 0 0 auto; /* or simply remove the previous flex rule */
+        }
+
+        /* Optional responsive behavior: still left-aligned when wrapping */
+        @media (max-width: 600px) {
+            .header {
+                flex-wrap: wrap;
+                /* gap already handles spacing; items will wrap but remain left-aligned */
+            }
+            .header .center {
+                order: initial;          /* keep natural order */
+                width: auto;             /* don't force full width */
+                justify-content: flex-start;
+            }
         }
 
         h1 {
@@ -292,8 +318,57 @@
 </head>
 <body>
 <div class="wrap">
-    <header>
-        <div class="logo" aria-hidden="true"></div>
+    <header class="header">
+        <img src="data:image/png;base64,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
+yvan1wBw1aoNVNZfmL8XpIk0dRTVNQr51Hz3X1/g081/t0U5d5x2W7BY6jjtzR2n
+/aEybtiwFt95xTn7K1/vjMZ1M3jCs5Cp8dbq2xg+3I3HH6Th5pXUzL0Sd1ER+Rmz
+SiaffOZzrK+HeGQwnVFSp09F5OQjJJgmQhG5t9MuQWjyhPwM3NnUGY3rRtB5Uyup
+gYP72PrUg+iJeMq+ouAJBKm5aD6X3v7jPEcKRf7LwpX8bpcf0dDUehb9/NeU185K
+RUyaJGIROnduO01kvvhV3NXUHo0bRtAqm2y1yaTPgg8f6WagrZVEdJDy6XWEpkwb
+k2xGJ//FX6ipWIyfqElZ8UBlmOD48adRBoVIjh1XFSHNguQ5Pe9tvqzIp1SCqRSp
+ImaTTYa8w0AhJ3NYvmy+bPIgCbg9fUrFOLUtSyotJ2dpdP7Zv8snObrmT102GTw8
+LtCiTCv1fnBmZXP6rlODoWbl0qrAi+eSbDK4S6DPKa1+UZlU7N3VUOnfcq7IJoM3
+lNU8X+LxtSsAt8yovKvE6+o9F2QjhCTo9vQ01tQ9CKAAnFekdt07d8KykE9tP5tl
+I4TE51IHvjdl3vV+1XsYsP/YY0QzyjYdOPz4B90Dt5mY7lOL/OnHJwfK3vnmpDl3
+lHn9BzKcRaGf20QSWvWOvsGbWgeGlncNj8yJJbWwRCqfTzan3KSkx6UMlXl9bZMC
+pdtml1a99LVA6G0n1/8DbXG3ekd3Wz0AAAAASUVORK5CYII=" alt="App icon" width="48" height="48">
         <div>
             <h1>Supported Formulas</h1>
             <div class="sub">Use these inside column <strong>JSON source</strong> expressions in the <strong>column
