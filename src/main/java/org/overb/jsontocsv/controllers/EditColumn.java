@@ -46,7 +46,6 @@ public class EditColumn {
     private Button helpButton;
 
     private Stage dialogStage;
-    private Window window;
     private CsvColumnDefinition definitionToEdit;
     @Setter
     private ObservableList<CsvColumnDefinition> csvColumnDefinitions;
@@ -55,12 +54,6 @@ public class EditColumn {
         rbDefault.setUserData(ColumnTypes.DEFAULT);
         rbLiteral.setUserData(ColumnTypes.LITERAL);
         rbFormula.setUserData(ColumnTypes.FORMULA);
-
-        txtColumnName.sceneProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue != null) {
-                this.window = newValue.getWindow();
-            }
-        });
     }
 
     @FXML
@@ -68,7 +61,7 @@ public class EditColumn {
         try {
             URL resource = App.class.getResource("/formulas.html");
             if (resource == null) {
-                UiHelper.messageBox(window, Alert.AlertType.ERROR, "Error", "Could not find formulas.html in resources.");
+                UiHelper.messageBox(dialogStage, Alert.AlertType.ERROR, "Error", "Could not find formulas.html in resources.");
                 return;
             }
             if ("file".equalsIgnoreCase(resource.getProtocol())) {
@@ -82,7 +75,7 @@ public class EditColumn {
             }
             Desktop.getDesktop().browse(tmp.toUri());
         } catch (Exception ex) {
-            UiHelper.errorBox(window, ex);
+            UiHelper.errorBox(dialogStage, ex);
         }
     }
 
@@ -90,7 +83,7 @@ public class EditColumn {
     private void onOk() {
         String name = txtColumnName.getText().trim();
         if (name.isEmpty()) {
-            UiHelper.messageBox(window, Alert.AlertType.ERROR, "Error", "Column name cannot be empty.");
+            UiHelper.messageBox(dialogStage, Alert.AlertType.ERROR, "Error", "Column name cannot be empty.");
             return;
         }
         if (App.properties.isColumnsSnakeCase()) {
@@ -99,7 +92,7 @@ public class EditColumn {
         }
         for (CsvColumnDefinition definition : csvColumnDefinitions) {
             if (definition.getColumnName().equals(name) && !definition.equals(definitionToEdit)) {
-                UiHelper.messageBox(window, Alert.AlertType.ERROR, "Error", "The column name '" + name + "' already exists.");
+                UiHelper.messageBox(dialogStage, Alert.AlertType.ERROR, "Error", "The column name '" + name + "' already exists.");
                 return;
             }
         }

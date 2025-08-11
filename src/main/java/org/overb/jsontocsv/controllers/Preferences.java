@@ -39,7 +39,6 @@ public class Preferences {
     @FXML
     public CheckBox cbDarkMode;
     private Stage dialogStage;
-    private Window window;
 
     public void initialize() {
         cbDarkMode.setOnAction(event -> {
@@ -59,11 +58,6 @@ public class Preferences {
 
         cbLimitPreview.setOnAction(event -> {
             txtLimit.setDisable(!cbLimitPreview.isSelected());
-        });
-        txtLimit.sceneProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue != null) {
-                this.window = newValue.getWindow();
-            }
         });
     }
 
@@ -85,7 +79,7 @@ public class Preferences {
             App.properties.setDarkMode(cbDarkMode.isSelected());
             App.properties.save();
         } catch (Exception error) {
-            UiHelper.errorBox(window, error);
+            UiHelper.errorBox(dialogStage, error);
         }
         dialogStage.close();
     }

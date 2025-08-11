@@ -1,5 +1,6 @@
 package org.overb.jsontocsv.elements;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -37,6 +38,9 @@ public class ApplicationProperties {
     @JsonProperty("dark_mode")
     private boolean darkMode;
 
+    @JsonIgnore
+    private final String updateStatusFileLink = "https://mysflsncxkjf.skd/jjsod.json";
+
     public void save() throws IOException {
         Path configFile = getConfigPath();
         Files.createDirectories(configFile.getParent());
@@ -65,7 +69,7 @@ public class ApplicationProperties {
                     if(properties.isDarkMode()){
                         ThemeManager.setDarkForAll(true);
                     }
-                    if (properties != null) return properties;
+                    return properties;
                 }
             }
         } catch (IOException e) {

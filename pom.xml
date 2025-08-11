@@ -6,9 +6,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.overb</groupId>
-    <artifactId>JsonToCsv21</artifactId>
+    <artifactId>json2csv</artifactId>
     <version>1.0.0</version>
-    <name>JsonToCsv21</name>
+    <name>Json2Csv</name>
 
     <properties>
         <java.version>21</java.version>
@@ -125,12 +125,17 @@
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>org.overb.jsontocsv.App</mainClass>
+                                    <manifestEntries>
+                                        <Implementation-Title>${project.name}</Implementation-Title>
+                                        <Implementation-Version>${project.version}</Implementation-Version>
+                                    </manifestEntries>
                                 </transformer>
                             </transformers>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
+
         </plugins>
     </build>
 </project>

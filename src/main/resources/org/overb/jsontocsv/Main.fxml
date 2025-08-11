@@ -34,6 +34,8 @@
                                                 <SeparatorMenuItem/>
                                                 <MenuItem fx:id="mnuPreferences" mnemonicParsing="false"
                                                           text="Preferences..."/>
+                                                <MenuItem fx:id="mnuUpdate" mnemonicParsing="false"
+                                                          text="Check for updates"/>
                                             </items>
                                         </Menu>
                                         <Menu mnemonicParsing="false" text="Actions">
@@ -91,8 +93,14 @@
             </items>
         </SplitPane>
         <TableView fx:id="tblCsvPreview" minHeight="200" SplitPane.resizableWithParent="true"/>
-        <ToolBar maxHeight="20.0" minHeight="20.0" nodeOrientation="RIGHT_TO_LEFT" prefHeight="20.0">
+        <ToolBar maxHeight="20.0" minHeight="20.0" nodeOrientation="LEFT_TO_RIGHT" prefHeight="20.0">
             <items>
+                <Label fx:id="lblVersion" text="v0">
+                    <font>
+                        <Font size="10.0"/>
+                    </font>
+                </Label>
+                <Pane HBox.hgrow="ALWAYS"/>
                 <Label alignment="CENTER_RIGHT" text="Copyright © 2025, Cristi Stan">
                     <font>
                         <Font size="10.0"/>

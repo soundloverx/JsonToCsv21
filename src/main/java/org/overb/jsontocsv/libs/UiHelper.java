@@ -1,5 +1,6 @@
 package org.overb.jsontocsv.libs;
 
+import javafx.event.EventHandler;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Dialog;
@@ -7,10 +8,7 @@ import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
-import javafx.stage.PopupWindow;
-import javafx.stage.Stage;
-import javafx.stage.Window;
+import javafx.stage.*;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.overb.jsontocsv.App;
 import org.overb.jsontocsv.enums.FileDialogTypes;
@@ -71,11 +69,13 @@ public class UiHelper {
     }
 
     public static void centerToOwner(Window owner, Window modal) {
+        EventHandler<WindowEvent> existing = modal.getOnShown();
         modal.setOnShown(e -> {
             double centerX = owner.getX() + (owner.getWidth() - modal.getWidth()) / 2;
             double centerY = owner.getY() + (owner.getHeight() - modal.getHeight()) / 2;
             modal.setX(centerX);
             modal.setY(centerY);
+            if (existing != null) existing.handle(e);
         });
     }
 

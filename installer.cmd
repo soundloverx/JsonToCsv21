@@ -13,7 +13,7 @@ for /f "delims=" %%m in ('
 jlink ^
   --module-path "%FXJMODS%;%JDKJMODS%;target/lib" ^
   --add-modules %MODS%,javafx.base,javafx.graphics,javafx.controls,javafx.fxml,jdk.crypto.ec ^
-  --strip-debug --no-header-files --no-man-pages --compress=2 ^
+  --strip-debug --no-header-files --no-man-pages --compress=zip-9 ^
   --output build\runtime
 
 jpackage ^

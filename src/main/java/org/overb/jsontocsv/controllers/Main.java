@@ -18,10 +18,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import javafx.util.Callback;
 import org.overb.jsontocsv.App;
-import org.overb.jsontocsv.dto.CsvColumnDefinition;
-import org.overb.jsontocsv.dto.CsvDefinitionsBundle;
-import org.overb.jsontocsv.dto.JsonDragNode;
-import org.overb.jsontocsv.dto.NamedSchema;
+import org.overb.jsontocsv.dto.*;
 import org.overb.jsontocsv.elements.NamedSchemaTreeCell;
 import org.overb.jsontocsv.elements.ReorderableRowFactory;
 import org.overb.jsontocsv.enums.ColumnTypes;
@@ -41,6 +38,10 @@ public class Main {
     public MenuItem mnuRefresh;
     @FXML
     public MenuItem mnuPreferences;
+    @FXML
+    public Label lblVersion;
+    @FXML
+    public MenuItem mnuUpdate;
     @FXML
     private TreeView<NamedSchema> tvJsonSchema;
     @FXML
@@ -64,16 +65,13 @@ public class Main {
 
     @FXML
     public void initialize() {
-        mnuAddDefinition.setOnAction(e -> {
-            EditColumn.show(window, csvColumnDefinitions, null);
-        });
+        mnuAddDefinition.setOnAction(e -> EditColumn.show(window, csvColumnDefinitions, null));
         mnuPreferences.setOnAction(e -> {
             Preferences.show(window);
             generateCsvPreview();
         });
-        mnuRefresh.setOnAction(e -> {
-            generateCsvPreview();
-        });
+        mnuRefresh.setOnAction(e -> generateCsvPreview());
+        mnuUpdate.setOnAction(e -> checkForUpdates());
         tvJsonSchema.sceneProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 this.window = newValue.getWindow();
@@ -178,6 +176,11 @@ public class Main {
             evt.setDropCompleted(true);
             evt.consume();
         });
+        lblVersion.setText(AppVersion.getCurrentVersion());
+    }
+
+    private void checkForUpdates() {
+        CheckUpdates.show(window);
     }
 
     private String buildFullTreePath(TreeItem<NamedSchema> item) {
