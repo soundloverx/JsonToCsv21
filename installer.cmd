@@ -17,14 +17,16 @@ jlink ^
   --output build\runtime
 
 jpackage ^
-  --type exe ^
+  --type msi ^
   --name "Json2Csv" ^
   --app-version "1.0.0" ^
+  --win-upgrade-uuid 5ab6b6cb-e4dc-43ae-a73b-476de4170932 ^
   --input target ^
   --main-jar json2csv.jar ^
   --main-class org.overb.jsontocsv.App ^
   --runtime-image build\runtime ^
   --icon src\main\resources\icons\j2c-48.ico ^
   --win-menu ^
-  --win-shortcut ^
-  --win-console
+  --win-shortcut
+
+rmdir /s /q build
