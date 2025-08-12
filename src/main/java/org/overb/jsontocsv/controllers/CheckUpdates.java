@@ -13,7 +13,6 @@ import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.stage.DirectoryChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -31,6 +30,7 @@ import java.util.Objects;
 
 public class CheckUpdates {
 
+    private static File downloadedUpdate = null;
     @FXML
     public StackPane formContainer;
     @FXML
@@ -66,43 +66,7 @@ public class CheckUpdates {
                 return http.fetchUpdateStatus(url);
             }
         };
-        task.setOnSucceeded(e -> {
-            UpdateStatus result = task.getValue();
-            try {
-                AppVersion current = new AppVersion(ApplicationProperties.version);
-                AppVersion latest = new AppVersion(result.latest());
-                lblCurrent.setText("Current version: " + current);
-                lblRemote.setText("Latest version: " + latest);
-                lblRemote.setVisible(true);
-                if (current.compareTo(latest) >= 0) {
-                    txtNotes.setText("You have the latest version.");
-                    txtNotes.setMinHeight(40);
-                    txtNotes.setPrefHeight(40);
-                } else {
-                    txtNotes.setText("Patch notes:\n");
-                    if (result.notes() != null && result.notes().length > 0) {
-                        for (String note : result.notes()) {
-                            txtNotes.setText(txtNotes.getText() + "\n" + note);
-                        }
-                        int textHeight = (result.notes().length + 1) * 25;
-                        if (textHeight > 200) {
-                            textHeight = 200;
-                        }
-                        txtNotes.setMinHeight(textHeight);
-                        txtNotes.setPrefHeight(textHeight);
-                        dialogStage.setResizable(true);
-                    }
-                    btnDownload.setDisable(false);
-                    btnDownload.setVisible(true);
-                    btnDownload.setUserData(result.link());
-                }
-                txtNotes.setVisible(true);
-                dialogStage.setMinHeight(150 + txtNotes.getHeight());
-                dialogStage.sizeToScene();
-            } catch (Exception ex) {
-                UiHelper.errorBox(dialogStage, ex);
-            }
-        });
+        task.setOnSucceeded(e -> setDownloadState(task.getValue()));
         task.setOnFailed(e -> {
             lblCurrent.setText("Failed to retrieve update info.");
             UiHelper.errorBox(dialogStage, (Exception) task.getException());
@@ -110,6 +74,77 @@ public class CheckUpdates {
         Thread t = new Thread(task, "check-updates-task");
         t.setDaemon(true);
         t.start();
+    }
+
+    private void setDownloadState(UpdateStatus updateStatus) {
+        try {
+            AppVersion current = new AppVersion(ApplicationProperties.version);
+            AppVersion latest = new AppVersion(updateStatus.latest());
+            lblCurrent.setText("Current version: " + current);
+            lblRemote.setText("Latest version: " + latest);
+            lblRemote.setVisible(true);
+            if (current.compareTo(latest) >= 0) {
+                txtNotes.setText("You have the latest version.");
+                txtNotes.setMinHeight(40);
+                txtNotes.setPrefHeight(40);
+            } else {
+                txtNotes.setText("Patch notes:\n");
+                if (updateStatus.notes() != null && updateStatus.notes().length > 0) {
+                    for (String note : updateStatus.notes()) {
+                        txtNotes.setText(txtNotes.getText() + "\n" + note);
+                    }
+                    int textHeight = (updateStatus.notes().length + 1) * 25;
+                    if (textHeight > 200) {
+                        textHeight = 200;
+                    }
+                    txtNotes.setMinHeight(textHeight);
+                    txtNotes.setPrefHeight(textHeight);
+                    dialogStage.setResizable(true);
+                }
+                btnDownload.setVisible(true);
+                if (downloadedUpdate != null && downloadedUpdate.exists()) {
+                    btnDownload.setDisable(true);
+                    btnDownload.setText("Already downloaded");
+                } else {
+                    btnDownload.setDisable(false);
+                    btnDownload.setUserData(updateStatus.link());
+                }
+            }
+            txtNotes.setVisible(true);
+            dialogStage.setMinHeight(150 + txtNotes.getHeight());
+            dialogStage.sizeToScene();
+        } catch (Exception error) {
+            UiHelper.errorBox(dialogStage, error);
+        }
+    }
+
+    @FXML
+    public void okAction(ActionEvent actionEvent) {
+        dialogStage.close();
+    }
+
+    @FXML
+    public void download(ActionEvent actionEvent) {
+        btnDownload.setText("Downloading...");
+        btnDownload.setDisable(true);
+        String link = btnDownload.getUserData() == null ? "" : btnDownload.getUserData().toString();
+        File selectedDir = UiHelper.openDirectoryChooser(dialogStage, "Select download Location");
+        if (selectedDir == null) {
+            btnDownload.setText("Download");
+            btnDownload.setDisable(false);
+            return;
+        }
+        try {
+            Path downloadFilePath = http.downloadTo(link, selectedDir.toPath());
+            btnDownload.setText("Done");
+            downloadedUpdate = downloadFilePath.toFile();
+            UiHelper.messageBox(dialogStage, Alert.AlertType.INFORMATION, "Download complete",
+                    "You can now close the app and run the installer downloaded at\n" + downloadFilePath);
+        } catch (Exception ex) {
+            UiHelper.errorBox(dialogStage, ex);
+            btnDownload.setText("Download");
+            btnDownload.setDisable(false);
+        }
     }
 
     public static void show(Window owner) {
@@ -137,33 +172,6 @@ public class CheckUpdates {
             stage.showAndWait();
         } catch (Exception error) {
             UiHelper.errorBox(owner, error);
-        }
-    }
-
-    @FXML
-    public void okAction(ActionEvent actionEvent) {
-        dialogStage.close();
-    }
-
-    @FXML
-    public void download(ActionEvent actionEvent) {
-        String link = btnDownload.getUserData() == null ? "" : btnDownload.getUserData().toString();
-        DirectoryChooser directoryChooser = new DirectoryChooser();
-        directoryChooser.setTitle("Select download Location");
-        File selectedDir = directoryChooser.showDialog(dialogStage);
-        if (selectedDir == null) {
-            return;
-        }
-        btnDownload.setText("Downloading...");
-        btnDownload.setDisable(true);
-        try {
-            Path p = http.downloadTo(link, selectedDir.toPath());
-            btnDownload.setText("Done");
-            UiHelper.messageBox(dialogStage, Alert.AlertType.INFORMATION, "Download complete", "File downloaded to " + p);
-        } catch (Exception ex) {
-            UiHelper.errorBox(dialogStage, ex);
-            btnDownload.setText("Download");
-            btnDownload.setDisable(false);
         }
     }
 }

@@ -226,7 +226,9 @@ public class Main {
 
     @FXML
     private void loadJsonFile() {
-        File file = UiHelper.openFileChooser(window, FileDialogTypes.LOAD, "Open JSON file", new FileChooser.ExtensionFilter("JSON Files (*.json)", "*.json"));
+        File file = UiHelper.openFileChooser(window, FileDialogTypes.LOAD, "Open JSON file (*.json | *.json.gz)",
+                new FileChooser.ExtensionFilter("JSON Files", "*.json", "*.json.gz"),
+                new FileChooser.ExtensionFilter("All files", "*.*"));
         if (file == null) return;
         try {
             setControlsEnabled(false);

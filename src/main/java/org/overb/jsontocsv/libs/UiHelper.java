@@ -18,6 +18,8 @@ import java.util.Objects;
 
 public class UiHelper {
 
+    private static File lastDirectory = null;
+
     public static void messageBox(Window owner, AlertType alertType, String title, String content) {
         Alert alert = new Alert(alertType);
         alert.initOwner(owner);
@@ -61,11 +63,32 @@ public class UiHelper {
         for (FileChooser.ExtensionFilter extensionFilter : extensionFilters) {
             chooser.getExtensionFilters().add(extensionFilter);
         }
-        if (dialogType == FileDialogTypes.SAVE) {
-            return chooser.showSaveDialog(owner);
-        } else {
-            return chooser.showOpenDialog(owner);
+        if (lastDirectory != null) {
+            chooser.setInitialDirectory(lastDirectory);
         }
+        File selectedFile = null;
+        if (dialogType == FileDialogTypes.SAVE) {
+            selectedFile = chooser.showSaveDialog(owner);
+        } else {
+            selectedFile = chooser.showOpenDialog(owner);
+        }
+        if (selectedFile != null) {
+            lastDirectory = selectedFile.getParentFile();
+        }
+        return selectedFile;
+    }
+
+    public static File openDirectoryChooser(Window owner, String title) {
+        DirectoryChooser directoryChooser = new DirectoryChooser();
+        directoryChooser.setTitle(title);
+        if (lastDirectory != null) {
+            directoryChooser.setInitialDirectory(lastDirectory);
+        }
+        File selectedFile = directoryChooser.showDialog(owner);
+        if (selectedFile != null) {
+            lastDirectory = selectedFile.getParentFile();
+        }
+        return selectedFile;
     }
 
     public static void centerToOwner(Window owner, Window modal) {

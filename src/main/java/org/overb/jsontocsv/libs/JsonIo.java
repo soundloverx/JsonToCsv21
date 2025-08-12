@@ -6,15 +6,23 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import java.io.File;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
+import java.util.zip.GZIPInputStream;
 
 public final class JsonIo {
 
     public static final ObjectMapper MAPPER = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
 
     public static JsonNode loadJsonFile(File file) throws Exception {
-        String content = Files.readString(file.toPath(), StandardCharsets.UTF_8);
+        boolean isGzip = file.getName().endsWith(".gz");
+        String content = "";
+        try (InputStream raw = Files.newInputStream(file.toPath(), StandardOpenOption.READ);
+             InputStream in = isGzip ? new GZIPInputStream(raw) : raw) {
+            content = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        }
         String trimmed = content.trim().replaceAll("\r", "");
 
         if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
