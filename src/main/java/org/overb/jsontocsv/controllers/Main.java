@@ -18,7 +18,11 @@ import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import javafx.util.Callback;
 import org.overb.jsontocsv.App;
-import org.overb.jsontocsv.dto.*;
+import org.overb.jsontocsv.dto.CsvColumnDefinition;
+import org.overb.jsontocsv.dto.CsvDefinitionsBundle;
+import org.overb.jsontocsv.dto.JsonDragNode;
+import org.overb.jsontocsv.dto.NamedSchema;
+import org.overb.jsontocsv.elements.ApplicationProperties;
 import org.overb.jsontocsv.elements.NamedSchemaTreeCell;
 import org.overb.jsontocsv.elements.ReorderableRowFactory;
 import org.overb.jsontocsv.enums.ColumnTypes;
@@ -176,7 +180,7 @@ public class Main {
             evt.setDropCompleted(true);
             evt.consume();
         });
-        lblVersion.setText(AppVersion.getCurrentVersion());
+        lblVersion.setText("v" + ApplicationProperties.version);
     }
 
     private void checkForUpdates() {

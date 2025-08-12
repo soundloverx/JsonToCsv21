@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Properties;
 
 @NoArgsConstructor
 @Getter
@@ -39,7 +40,19 @@ public class ApplicationProperties {
     private boolean darkMode;
 
     @JsonIgnore
-    private final String updateStatusFileLink = "http://10.58.13.38/json2csv/status.json";
+    public static final String updateStatusFileLink;
+    @JsonIgnore
+    public static final String version;
+
+    static {
+        Properties properties = new Properties();
+        try (var in = ApplicationProperties.class.getResourceAsStream("/app.properties")) {
+            if (in != null) properties.load(in);
+        } catch (Exception ignore) {
+        }
+        updateStatusFileLink = properties.getProperty("update");
+        version = properties.getProperty("version");
+    }
 
     public void save() throws IOException {
         Path configFile = getConfigPath();
@@ -66,7 +79,7 @@ public class ApplicationProperties {
             if (Files.exists(configFile)) {
                 try (var r = Files.newBufferedReader(configFile, StandardCharsets.UTF_8)) {
                     ApplicationProperties properties = JsonIo.MAPPER.readValue(r, ApplicationProperties.class);
-                    if(properties.isDarkMode()){
+                    if (properties.isDarkMode()) {
                         ThemeManager.setDarkForAll(true);
                     }
                     return properties;

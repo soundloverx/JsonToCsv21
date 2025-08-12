@@ -1,8 +1,7 @@
 @echo off
 setlocal
 
-set FXJMODS=C:\Users\sound\OneDrive\Projects\javafx-jmods-21.0.8
-set JDKJMODS=%JAVA_HOME%\jmods
+set FXJMODS=c:/Program Files/Java/javafx-jmods-21.0.8
 
 for /f "delims=" %%m in ('
   jdeps --multi-release 21 --ignore-missing-deps --print-module-deps ^
@@ -11,7 +10,7 @@ for /f "delims=" %%m in ('
 ') do set MODS=%%m
 
 jlink ^
-  --module-path "%FXJMODS%;%JDKJMODS%;target/lib" ^
+  --module-path "%JAVA_HOME%jmods;%FXJMODS%;target/lib" ^
   --add-modules %MODS%,javafx.base,javafx.graphics,javafx.controls,javafx.fxml,jdk.crypto.ec ^
   --strip-debug --no-header-files --no-man-pages --compress=zip-9 ^
   --output build\runtime

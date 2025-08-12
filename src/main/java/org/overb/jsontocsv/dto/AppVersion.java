@@ -4,7 +4,6 @@ import org.overb.jsontocsv.App;
 
 public class AppVersion implements Comparable<AppVersion> {
 
-    private static String currentVersion;
     private final int major;
     private final int minor;
     private final int patch;
@@ -27,14 +26,6 @@ public class AppVersion implements Comparable<AppVersion> {
             i++;
         }
         return i == 0 ? "0" : v.substring(0, i);
-    }
-
-    public static String getCurrentVersion() {
-        if (currentVersion == null) {
-            String version = App.class.getPackage() != null ? App.class.getPackage().getImplementationVersion() : null;
-            currentVersion = "v" + (version == null ? "Dev" : version);
-        }
-        return currentVersion;
     }
 
     @Override
