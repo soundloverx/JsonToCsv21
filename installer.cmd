@@ -18,7 +18,7 @@ jlink ^
 jpackage ^
   --type msi ^
   --name "Json2Csv" ^
-  --app-version "1.0.0" ^
+  --app-version "1.0.1" ^
   --win-upgrade-uuid 5ab6b6cb-e4dc-43ae-a73b-476de4170932 ^
   --input target ^
   --main-jar json2csv.jar ^
