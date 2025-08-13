@@ -44,8 +44,6 @@ public class Main {
     @FXML
     public MenuItem mnuPreferences;
     @FXML
-    public Label lblVersion;
-    @FXML
     public MenuItem mnuUpdate;
     @FXML
     public Menu mnuRecentFiles;
@@ -225,11 +223,9 @@ public class Main {
             evt.consume();
         });
         txtRoot.textProperty().addListener((obs, ov, nv) -> RootValidator.validateRootField(loadedJson, currentSchema, txtRoot));
-        lblVersion.setText("v" + ApplicationProperties.version);
         RootValidator.validateRootField(loadedJson, currentSchema, txtRoot);
         updateColumnsCounter();
         setPreviewCounters(0, "-");
-        lblVersion.setText("v" + ApplicationProperties.version);
     }
 
     private String buildFullTreePath(TreeItem<NamedSchema> item) {

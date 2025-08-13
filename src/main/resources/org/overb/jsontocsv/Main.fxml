@@ -114,31 +114,15 @@
         <ToolBar maxHeight="22.0" minHeight="22.0" prefHeight="22.0">
             <items>
                 <Label text="Columns:"/>
-                <Label fx:id="lblColumnsCount" text="0">
-                    <font>
-                        <Font size="11.0"/>
-                    </font>
-                </Label>
+                <Label fx:id="lblColumnsCount" text="0"/>
                 <Separator orientation="VERTICAL"/>
                 <Label text="Preview rows:"/>
-                <Label fx:id="lblPreviewRowsCount" text="0">
-                    <font>
-                        <Font size="11.0"/>
-                    </font>
-                </Label>
+                <Label fx:id="lblPreviewRowsCount" text="0"/>
                 <Separator orientation="VERTICAL"/>
                 <Label text="Preview time:"/>
-                <Label fx:id="lblPreviewTime" text="-">
-                    <font>
-                        <Font size="11.0"/>
-                    </font>
-                </Label>
+                <Label fx:id="lblPreviewTime" text="-"/>
                 <Pane HBox.hgrow="ALWAYS"/>
-                <Label fx:id="lblVersion" text="v0">
-                    <font>
-                        <Font size="10.0"/>
-                    </font>
-                </Label>
+                <Label fx:id="lblVersion" text="© 2025 Cristi Stan"/>
             </items>
         </ToolBar>
     </items>
