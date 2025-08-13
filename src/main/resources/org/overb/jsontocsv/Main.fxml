@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
+<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.input.KeyCodeCombination?>
 <?import javafx.scene.layout.*?>
@@ -11,8 +11,16 @@
     <items>
         <SplitPane dividerPositions="0.5" orientation="HORIZONTAL">
             <items>
-                <TreeView fx:id="tvJsonSchema" minHeight="200.0" showRoot="false"/>
-                <VBox minWidth="250">
+                <VBox minWidth="200.0" spacing="2.0">
+                    <children>
+                        <TextField fx:id="txtSchemaSearch" promptText="Search schema (name or path)"/>
+                        <TreeView fx:id="tvJsonSchema" minHeight="200.0" showRoot="false" VBox.vgrow="ALWAYS"/>
+                    </children>
+                    <padding>
+                        <Insets bottom="2.0" left="2.0" right="2.0" top="2.0"/>
+                    </padding>
+                </VBox>
+                <VBox minWidth="250" spacing="2.0">
                     <children>
                         <HBox fillHeight="false" prefWidth="200.0">
                             <children>
@@ -21,16 +29,19 @@
                                         <Menu mnemonicParsing="false" text="File">
                                             <items>
                                                 <MenuItem fx:id="mnuLoadJson" mnemonicParsing="false"
-                                                          onAction="#loadJsonFile" text="Load JSON file..."/>
+                                                          onAction="#mnuLoadJsonFile" text="Load JSON file..."/>
                                                 <MenuItem fx:id="mnuSaveCsv" mnemonicParsing="false" onAction="#saveCsv"
                                                           text="Save CSV..."/>
                                                 <SeparatorMenuItem/>
                                                 <MenuItem fx:id="mnuLoadCsvDefinition" mnemonicParsing="false"
-                                                          onAction="#loadCsvDefinitions"
+                                                          onAction="#mnuLoadCsvDefinitions"
                                                           text="Load CSV definitions..."/>
                                                 <MenuItem fx:id="mnuSaveCsvDefinition" mnemonicParsing="false"
                                                           onAction="#saveCsvDefinitions"
                                                           text="Save CSV definitions..."/>
+                                                <SeparatorMenuItem/>
+                                                <Menu fx:id="mnuRecentFiles" mnemonicParsing="false"
+                                                      text="Recent files"/>
                                                 <SeparatorMenuItem/>
                                                 <MenuItem fx:id="mnuPreferences" mnemonicParsing="false"
                                                           text="Preferences..."/>
@@ -62,17 +73,17 @@
                                         </Menu>
                                     </menus>
                                     <HBox.margin>
-                                        <Insets top="2.0"/>
+                                        <Insets/>
                                     </HBox.margin>
                                 </MenuBar>
                                 <Label contentDisplay="CENTER" text="Root:">
                                     <HBox.margin>
-                                        <Insets bottom="1.0" left="10.0" top="6.0"/>
+                                        <Insets left="15.0" top="5.0"/>
                                     </HBox.margin>
                                 </Label>
                                 <TextField fx:id="txtRoot" HBox.hgrow="ALWAYS">
                                     <HBox.margin>
-                                        <Insets bottom="1.0" left="5.0" right="1.0" top="1.0"/>
+                                        <Insets left="5.0"/>
                                     </HBox.margin>
                                 </TextField>
                             </children>
@@ -89,19 +100,41 @@
                         </TableView>
 
                     </children>
+                    <padding>
+                        <Insets bottom="2.0" left="2.0" right="2.0" top="2.0"/>
+                    </padding>
                 </VBox>
             </items>
         </SplitPane>
-        <TableView fx:id="tblCsvPreview" minHeight="200" SplitPane.resizableWithParent="true"/>
-        <ToolBar maxHeight="20.0" minHeight="20.0" nodeOrientation="LEFT_TO_RIGHT" prefHeight="20.0">
+        <TableView fx:id="tblCsvPreview" minHeight="200" SplitPane.resizableWithParent="true">
+            <padding>
+                <Insets bottom="2.0" left="2.0" right="2.0" top="2.0"/>
+            </padding>
+        </TableView>
+        <ToolBar maxHeight="22.0" minHeight="22.0" prefHeight="22.0">
             <items>
-                <Label fx:id="lblVersion" text="v0">
+                <Label text="Columns:"/>
+                <Label fx:id="lblColumnsCount" text="0">
                     <font>
-                        <Font size="10.0"/>
+                        <Font size="11.0"/>
+                    </font>
+                </Label>
+                <Separator orientation="VERTICAL"/>
+                <Label text="Preview rows:"/>
+                <Label fx:id="lblPreviewRowsCount" text="0">
+                    <font>
+                        <Font size="11.0"/>
+                    </font>
+                </Label>
+                <Separator orientation="VERTICAL"/>
+                <Label text="Preview time:"/>
+                <Label fx:id="lblPreviewTime" text="-">
+                    <font>
+                        <Font size="11.0"/>
                     </font>
                 </Label>
                 <Pane HBox.hgrow="ALWAYS"/>
-                <Label alignment="CENTER_RIGHT" text="Copyright © 2025, Cristi Stan">
+                <Label fx:id="lblVersion" text="v0">
                     <font>
                         <Font size="10.0"/>
                     </font>

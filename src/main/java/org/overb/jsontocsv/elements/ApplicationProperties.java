@@ -14,6 +14,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 @NoArgsConstructor
@@ -39,6 +41,9 @@ public class ApplicationProperties {
     @JsonProperty("dark_mode")
     private boolean darkMode;
 
+    @JsonProperty("recent_files")
+    private List<String> recentFiles = new ArrayList<>();
+
     @JsonIgnore
     public static final String updateStatusFileLink;
     @JsonIgnore
@@ -59,6 +64,35 @@ public class ApplicationProperties {
         Files.createDirectories(configFile.getParent());
         try (var w = Files.newBufferedWriter(configFile, StandardCharsets.UTF_8)) {
             JsonIo.MAPPER.writerWithDefaultPrettyPrinter().writeValue(w, this);
+        }
+    }
+
+    public void addRecentFile(String path) {
+        if (path == null) return;
+        recentFiles.remove(path);
+        recentFiles.addFirst(path);
+        while (recentFiles.size() > 8) {
+            recentFiles.removeLast();
+        }
+        try {
+            save();
+        } catch (IOException ignore) {
+        }
+    }
+
+    public void removeRecentFile(String path) {
+        recentFiles.remove(path);
+        try {
+            save();
+        } catch (IOException ignore) {
+        }
+    }
+
+    public void clearRecentFiles() {
+        recentFiles.clear();
+        try {
+            save();
+        } catch (IOException ignore) {
         }
     }
 

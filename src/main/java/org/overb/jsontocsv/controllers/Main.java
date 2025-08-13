@@ -25,6 +25,7 @@ import org.overb.jsontocsv.dto.NamedSchema;
 import org.overb.jsontocsv.elements.ApplicationProperties;
 import org.overb.jsontocsv.elements.NamedSchemaTreeCell;
 import org.overb.jsontocsv.elements.ReorderableRowFactory;
+import org.overb.jsontocsv.elements.RootValidator;
 import org.overb.jsontocsv.enums.ColumnTypes;
 import org.overb.jsontocsv.enums.FileDialogTypes;
 import org.overb.jsontocsv.libs.*;
@@ -47,6 +48,16 @@ public class Main {
     @FXML
     public MenuItem mnuUpdate;
     @FXML
+    public Menu mnuRecentFiles;
+    @FXML
+    public TextField txtSchemaSearch;
+    @FXML
+    private Label lblColumnsCount;
+    @FXML
+    private Label lblPreviewRowsCount;
+    @FXML
+    private Label lblPreviewTime;
+    @FXML
     private TreeView<NamedSchema> tvJsonSchema;
     @FXML
     private TableView<CsvColumnDefinition> tblColumnDefinitions;
@@ -64,18 +75,22 @@ public class Main {
     private static final DataFormat NAMED_SCHEMA_LIST = new DataFormat("application/x-java-named-schema-list");
     private final ObservableList<CsvColumnDefinition> csvColumnDefinitions = FXCollections.observableArrayList();
     private JsonNode loadedJson;
+    private JsonSchemaHelper.Schema currentSchema;
+    private TreeItem<NamedSchema> fullSchemaRoot;
     private Window window;
     private Task<ObservableList<Map<String, String>>> currentPreviewTask;
 
     @FXML
     public void initialize() {
+        rebuildRecentFilesMenu();
+        txtSchemaSearch.textProperty().addListener((obs, oldV, newV) -> applySchemaFilter());
         mnuAddDefinition.setOnAction(e -> EditColumn.show(window, csvColumnDefinitions, null));
         mnuPreferences.setOnAction(e -> {
             Preferences.show(window);
             generateCsvPreview();
         });
         mnuRefresh.setOnAction(e -> generateCsvPreview());
-        mnuUpdate.setOnAction(e -> checkForUpdates());
+        mnuUpdate.setOnAction(e -> CheckUpdates.show(window));
         tvJsonSchema.sceneProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 this.window = newValue.getWindow();
@@ -83,6 +98,24 @@ public class Main {
         });
         tvJsonSchema.setCellFactory(tv -> new NamedSchemaTreeCell());
         tvJsonSchema.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        tvJsonSchema.setOnDragOver(evt -> {
+            if (evt.getGestureSource() != tvJsonSchema) {
+                Dragboard db = evt.getDragboard();
+                if (db.hasFiles() && db.getFiles().stream().anyMatch(f -> f.getName().endsWith(".json") || f.getName().endsWith(".json.gz"))) {
+                    evt.acceptTransferModes(TransferMode.COPY);
+                }
+            }
+            evt.consume();
+        });
+        tvJsonSchema.setOnDragDropped(evt -> {
+            Dragboard db = evt.getDragboard();
+            if (db.hasFiles()) {
+                Optional<File> fileOpt = db.getFiles().stream().filter(f -> f.getName().toLowerCase().endsWith(".json") || f.getName().toLowerCase().endsWith(".json.gz")).findFirst();
+                fileOpt.ifPresent(this::loadJson);
+            }
+            evt.setDropCompleted(true);
+            evt.consume();
+        });
 
         csvNameColumn.setCellValueFactory(new PropertyValueFactory<>("columnName"));
         jsonPathColumn.setCellValueFactory(new PropertyValueFactory<>("jsonSource"));
@@ -97,12 +130,12 @@ public class Main {
         });
         tblColumnDefinitions.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         csvColumnDefinitions.addListener((ListChangeListener<CsvColumnDefinition>) change -> {
+            updateColumnsCounter();
             if (change.next()) {
                 generateCsvPreview();
             }
         });
 
-        // drag & drop from the json schema into the csv definitions:
         tvJsonSchema.setOnDragDetected(evt -> {
             var selected = tvJsonSchema.getSelectionModel().getSelectedItems();
             if (selected.isEmpty()) return;
@@ -116,13 +149,24 @@ public class Main {
             evt.consume();
         });
         tblColumnDefinitions.setOnDragOver(evt -> {
-            if (evt.getGestureSource() != tblColumnDefinitions && evt.getDragboard().hasContent(NAMED_SCHEMA_LIST)) {
-                evt.acceptTransferModes(TransferMode.COPY);
+            if (evt.getGestureSource() != tblColumnDefinitions) {
+                if (evt.getDragboard().hasContent(NAMED_SCHEMA_LIST)) {
+                    evt.acceptTransferModes(TransferMode.COPY);
+                } else if (evt.getDragboard().hasFiles() && evt.getDragboard().getFiles().stream().anyMatch(f -> f.getName().toLowerCase().endsWith(".j2csv"))) {
+                    evt.acceptTransferModes(TransferMode.COPY);
+                }
             }
             evt.consume();
         });
         tblColumnDefinitions.setOnDragDropped(evt -> {
             Dragboard db = evt.getDragboard();
+            if (db.hasFiles()) {
+                Optional<File> fileOpt = db.getFiles().stream().filter(f -> f.getName().toLowerCase().endsWith(".j2csv")).findFirst();
+                fileOpt.ifPresent(this::loadCsvDefinitions);
+                evt.setDropCompleted(true);
+                evt.consume();
+                return;
+            }
             if (!db.hasContent(NAMED_SCHEMA_LIST)) {
                 evt.setDropCompleted(false);
                 evt.consume();
@@ -180,11 +224,12 @@ public class Main {
             evt.setDropCompleted(true);
             evt.consume();
         });
+        txtRoot.textProperty().addListener((obs, ov, nv) -> RootValidator.validateRootField(loadedJson, currentSchema, txtRoot));
         lblVersion.setText("v" + ApplicationProperties.version);
-    }
-
-    private void checkForUpdates() {
-        CheckUpdates.show(window);
+        RootValidator.validateRootField(loadedJson, currentSchema, txtRoot);
+        updateColumnsCounter();
+        setPreviewCounters(0, "-");
+        lblVersion.setText("v" + ApplicationProperties.version);
     }
 
     private String buildFullTreePath(TreeItem<NamedSchema> item) {
@@ -215,21 +260,30 @@ public class Main {
         tblCsvPreview.getItems().clear();
         csvColumnDefinitions.clear();
         txtRoot.setText(null);
+        currentSchema = null;
+        updateColumnsCounter();
+        setPreviewCounters(0, "-");
     }
 
     @FXML
     private void resetEverything() {
         resetDefinitions();
         tvJsonSchema.setRoot(null);
+        fullSchemaRoot = null;
         loadedJson = null;
+        setPreviewCounters(0, "-");
     }
 
     @FXML
-    private void loadJsonFile() {
+    private void mnuLoadJsonFile() {
         File file = UiHelper.openFileChooser(window, FileDialogTypes.LOAD, "Open JSON file (*.json | *.json.gz)",
                 new FileChooser.ExtensionFilter("JSON Files", "*.json", "*.json.gz"),
                 new FileChooser.ExtensionFilter("All files", "*.*"));
         if (file == null) return;
+        loadJson(file);
+    }
+
+    private void loadJson(File file) {
         try {
             setControlsEnabled(false);
             loadedJson = JsonIo.loadJsonFile(file);
@@ -237,6 +291,9 @@ public class Main {
             if (App.properties.isAutoConvertOnLoad()) {
                 parseJsonIntoCsvColumns(loadedJson);
             }
+            App.properties.addRecentFile(file.getAbsolutePath());
+            rebuildRecentFilesMenu();
+            setPreviewCounters(0, "-");
         } catch (Exception error) {
             UiHelper.errorBox(window, error);
         } finally {
@@ -270,10 +327,12 @@ public class Main {
     }
 
     private void loadJsonSchemaIntoTree() {
-        JsonSchemaHelper.Schema schema = JsonSchemaService.buildJsonSchema(loadedJson);
-        TreeItem<NamedSchema> rootItem = toTreeItem("", schema);
+        currentSchema = JsonSchemaService.buildJsonSchema(loadedJson);
+        TreeItem<NamedSchema> rootItem = toTreeItem("", currentSchema);
+        fullSchemaRoot = rootItem;
         tvJsonSchema.setRoot(rootItem);
         expandAll(rootItem);
+        applySchemaFilter();
     }
 
     private void expandAll(TreeItem<?> root) {
@@ -314,6 +373,7 @@ public class Main {
         if (JsonSchemaService.isShallow(rootNode)) {
             loadSimpleJson(rootNode);
         } else if (csvColumnDefinitions.isEmpty()) {
+            RootValidator.validateRootField(loadedJson, currentSchema, txtRoot);
             UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info", "You have loaded a nested JSON.\nYou have to manually configure the CSV columns.\nRemember to fill in the root node name.");
         } else {
             generateCsvPreview();
@@ -338,11 +398,16 @@ public class Main {
     }
 
     private void generateCsvPreview() {
-        if (loadedJson == null) return;
+        if (loadedJson == null) {
+            setPreviewCounters(0, "-");
+            return;
+        }
+        RootValidator.validateRootField(loadedJson, currentSchema, txtRoot);
         if (csvColumnDefinitions.isEmpty()) {
             tblCsvPreview.getColumns().clear();
             tblCsvPreview.getItems().clear();
             tblCsvPreview.setPlaceholder(new Label("No columns"));
+            setPreviewCounters(0, "-");
             return;
         }
         tblCsvPreview.getColumns().clear();
@@ -359,21 +424,26 @@ public class Main {
             currentPreviewTask.cancel();
         }
         tblCsvPreview.setPlaceholder(new ProgressIndicator());
+        long lastPreviewStartNanos = System.nanoTime();
+        setPreviewCounters(0, "…");
+
         currentPreviewTask = new Task<>() {
             @Override
             protected ObservableList<Map<String, String>> call() {
                 return CsvRowExpander.previewCsvRows(loadedJson, root, defsSnapshot, limit);
             }
         };
-
         currentPreviewTask.setOnSucceeded(e -> {
             ObservableList<Map<String, String>> rows = currentPreviewTask.getValue();
             tblCsvPreview.setItems(rows);
-            if (rows == null || rows.isEmpty()) {
+            long elapsedMs = Math.max(0, (System.nanoTime() - lastPreviewStartNanos) / 1_000_000);
+            int rowCount = (rows == null) ? 0 : rows.size();
+            if (rowCount == 0) {
                 tblCsvPreview.setPlaceholder(new Label("No rows"));
             } else {
                 tblCsvPreview.setPlaceholder(new Label(""));
             }
+            setPreviewCounters(rowCount, elapsedMs + " ms");
         });
 
         currentPreviewTask.setOnFailed(e -> {
@@ -384,9 +454,18 @@ public class Main {
         new Thread(currentPreviewTask, "preview-builder").start();
     }
 
-    public void loadCsvDefinitions(ActionEvent actionEvent) {
+    public void mnuLoadCsvDefinitions(ActionEvent actionEvent) {
         File file = UiHelper.openFileChooser(window, FileDialogTypes.LOAD, "Load J2CSV definitions", new FileChooser.ExtensionFilter("J2CSV Files (*.j2csv)", "*.j2csv"));
         if (file == null) return;
+        loadCsvDefinitions(file);
+    }
+
+    private void loadCsvDefinitions(File file) {
+        if (!file.exists() || !file.isFile() || !file.getName().toLowerCase(Locale.ROOT).endsWith(".j2csv")) {
+            App.properties.removeRecentFile(file.getAbsolutePath());
+            UiHelper.messageBox(window, Alert.AlertType.ERROR, "Error", "File does not exist or is not a J2CSV file.");
+            return;
+        }
         setControlsEnabled(false);
         try {
             CsvDefinitionsBundle bundle = JsonIo.MAPPER.readValue(file, CsvDefinitionsBundle.class);
@@ -394,6 +473,8 @@ public class Main {
             csvColumnDefinitions.setAll(bundle.definitions() != null ? bundle.definitions() : List.of());
             tblColumnDefinitions.refresh();
             generateCsvPreview();
+            App.properties.addRecentFile(file.getAbsolutePath());
+            rebuildRecentFilesMenu();
         } catch (Exception error) {
             UiHelper.errorBox(window, error);
         } finally {
@@ -423,4 +504,102 @@ public class Main {
             setControlsEnabled(true);
         }
     }
+
+    private void updateColumnsCounter() {
+        if (lblColumnsCount != null) {
+            lblColumnsCount.setText(String.valueOf(csvColumnDefinitions.size()));
+        }
+    }
+
+    private void setPreviewCounters(int rows, String timeText) {
+        if (lblPreviewRowsCount != null) {
+            lblPreviewRowsCount.setText(String.valueOf(rows));
+        }
+        if (lblPreviewTime != null) {
+            lblPreviewTime.setText(timeText == null ? "-" : timeText);
+        }
+    }
+
+    private void rebuildRecentFilesMenu() {
+        if (mnuRecentFiles == null) return;
+        mnuRecentFiles.getItems().clear();
+        if (App.properties.getRecentFiles().isEmpty()) {
+            MenuItem empty = new MenuItem("(no recent files)");
+            empty.setDisable(true);
+            mnuRecentFiles.getItems().add(empty);
+            return;
+        }
+        for (String filePath : App.properties.getRecentFiles()) {
+            MenuItem mi = new MenuItem(filePath);
+            mi.setOnAction(evt -> {
+                File file = new File(((MenuItem) evt.getSource()).getText());
+                if (file.getName().endsWith(".j2csv")) {
+                    loadCsvDefinitions(file);
+                } else {
+                    loadJson(file);
+                }
+            });
+            mnuRecentFiles.getItems().add(mi);
+        }
+        mnuRecentFiles.getItems().add(new SeparatorMenuItem());
+        MenuItem clear = new MenuItem("Clear recent files");
+        clear.setOnAction(e -> {
+            App.properties.clearRecentFiles();
+            rebuildRecentFilesMenu();
+        });
+        mnuRecentFiles.getItems().add(clear);
+    }
+
+    private void applySchemaFilter() {
+        if (tvJsonSchema == null) return;
+        if (fullSchemaRoot == null) return;
+
+        String q = txtSchemaSearch == null ? "" : Optional.ofNullable(txtSchemaSearch.getText()).orElse("");
+        q = q.trim().toLowerCase(Locale.ROOT);
+
+        if (q.isEmpty()) {
+            tvJsonSchema.setRoot(fullSchemaRoot);
+            expandAll(fullSchemaRoot);
+            return;
+        }
+
+        TreeItem<NamedSchema> filtered = filterTree(fullSchemaRoot, "", q);
+        tvJsonSchema.setRoot(filtered);
+        expandAll(filtered);
+    }
+
+    private TreeItem<NamedSchema> filterTree(TreeItem<NamedSchema> source, String pathPrefix, String q) {
+        if (source == null || source.getValue() == null) return null;
+
+        String name = Optional.ofNullable(source.getValue().name()).orElse("");
+        String fullPath = joinPath(pathPrefix, name);
+
+        // Recreate node and include children that match
+        TreeItem<NamedSchema> copy = new TreeItem<>(source.getValue());
+
+        // Filter children recursively
+        for (TreeItem<NamedSchema> child : source.getChildren()) {
+            TreeItem<NamedSchema> filteredChild = filterTree(child, fullPath, q);
+            if (filteredChild != null) {
+                copy.getChildren().add(filteredChild);
+            }
+        }
+
+        boolean nameMatches = name.toLowerCase(Locale.ROOT).contains(q);
+        boolean pathMatches = fullPath.toLowerCase(Locale.ROOT).contains(q);
+
+        // Keep node if it matches by itself or has any matching descendants
+        if (nameMatches || pathMatches || !copy.getChildren().isEmpty()) {
+            return copy;
+        }
+        return null;
+    }
+
+    private String joinPath(String prefix, String name) {
+        String n = Optional.ofNullable(name).orElse("");
+        if (prefix == null || prefix.isEmpty()) return n;
+        if (n == null || n.isEmpty()) return prefix;
+        return prefix + "." + n;
+    }
+
 }

@@ -29,7 +29,7 @@ public class App extends Application {
                 new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/j2c-64.png"))),
                 new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/j2c-128.png")))
         );
-        stage.setTitle("Json to CSV");
+        stage.setTitle("Json to CSV converter (v" + ApplicationProperties.version + ")");
         stage.setScene(scene);
         stage.setMinHeight(500);
         stage.setMinWidth(600);
