@@ -8,7 +8,7 @@
     <CheckBox fx:id="cbDarkMode" layoutX="20.0" layoutY="20.0" mnemonicParsing="false" prefHeight="17.0"
               text="Dark mode"/>
     <CheckBox fx:id="cbAutoConvert" layoutX="20.0" layoutY="20.0" mnemonicParsing="false" prefHeight="17.0"
-              selected="true" text="Automatically convert JSON on load">
+              selected="true" text="Automatically detect data root in JSON on load">
         <VBox.margin>
             <Insets top="4.0"/>
         </VBox.margin>

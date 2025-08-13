@@ -22,7 +22,6 @@ import org.overb.jsontocsv.dto.CsvColumnDefinition;
 import org.overb.jsontocsv.dto.CsvDefinitionsBundle;
 import org.overb.jsontocsv.dto.JsonDragNode;
 import org.overb.jsontocsv.dto.NamedSchema;
-import org.overb.jsontocsv.elements.ApplicationProperties;
 import org.overb.jsontocsv.elements.NamedSchemaTreeCell;
 import org.overb.jsontocsv.elements.ReorderableRowFactory;
 import org.overb.jsontocsv.elements.RootValidator;
@@ -253,8 +252,9 @@ public class Main {
 
     @FXML
     private void resetDefinitions() {
-        tblCsvPreview.getItems().clear();
+        tblCsvPreview.setItems(FXCollections.observableArrayList());
         csvColumnDefinitions.clear();
+        tblColumnDefinitions.getItems().clear();
         txtRoot.setText(null);
         currentSchema = null;
         updateColumnsCounter();
@@ -268,6 +268,22 @@ public class Main {
         fullSchemaRoot = null;
         loadedJson = null;
         setPreviewCounters(0, "-");
+    }
+
+    @FXML
+    public void rebuildDefinitions(ActionEvent actionEvent) {
+        if (loadedJson == null) {
+            return;
+        }
+        resetDefinitions();
+        try {
+            setControlsEnabled(false);
+            parseJsonIntoCsvColumns(loadedJson);
+        } catch (Exception error) {
+            UiHelper.errorBox(window, error);
+        } finally {
+            setControlsEnabled(true);
+        }
     }
 
     @FXML
@@ -369,8 +385,15 @@ public class Main {
         if (JsonSchemaService.isShallow(rootNode)) {
             loadSimpleJson(rootNode);
         } else if (csvColumnDefinitions.isEmpty()) {
+            Optional<String> recommendedRoot = JsonRootDetector.detectSuggestedRoot(loadedJson);
+            if (recommendedRoot.isPresent()) {
+//                UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info", "You have loaded a nested JSON.\nAutomatically detected root: " + recommendedRoot.orElse("N/A"));
+                txtRoot.setText(recommendedRoot.get());
+                loadSimpleJson(JsonPath.navigate(rootNode, recommendedRoot.get()));
+            } else {
+                UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info", "You have loaded a nested JSON.\nYou have to manually configure the CSV columns.\nRemember to fill in the root node name.");
+            }
             RootValidator.validateRootField(loadedJson, currentSchema, txtRoot);
-            UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info", "You have loaded a nested JSON.\nYou have to manually configure the CSV columns.\nRemember to fill in the root node name.");
         } else {
             generateCsvPreview();
         }
@@ -401,7 +424,7 @@ public class Main {
         RootValidator.validateRootField(loadedJson, currentSchema, txtRoot);
         if (csvColumnDefinitions.isEmpty()) {
             tblCsvPreview.getColumns().clear();
-            tblCsvPreview.getItems().clear();
+            tblCsvPreview.setItems(FXCollections.observableArrayList());
             tblCsvPreview.setPlaceholder(new Label("No columns"));
             setPreviewCounters(0, "-");
             return;
@@ -431,20 +454,27 @@ public class Main {
         };
         currentPreviewTask.setOnSucceeded(e -> {
             ObservableList<Map<String, String>> rows = currentPreviewTask.getValue();
+            if (rows == null) {
+                rows = FXCollections.observableArrayList();
+            }
             tblCsvPreview.setItems(rows);
             long elapsedMs = Math.max(0, (System.nanoTime() - lastPreviewStartNanos) / 1_000_000);
-            int rowCount = (rows == null) ? 0 : rows.size();
-            if (rowCount == 0) {
-                tblCsvPreview.setPlaceholder(new Label("No rows"));
-            } else {
-                tblCsvPreview.setPlaceholder(new Label(""));
-            }
+            int rowCount = rows.size();
+            tblCsvPreview.setPlaceholder(rowCount == 0 ? new Label("No rows") : new Label(""));
             setPreviewCounters(rowCount, elapsedMs + " ms");
         });
 
         currentPreviewTask.setOnFailed(e -> {
             UiHelper.errorBox(window, (Exception) currentPreviewTask.getException());
+            tblCsvPreview.setItems(FXCollections.observableArrayList()); // ensure list present
             tblCsvPreview.setPlaceholder(new Label("Error"));
+            setPreviewCounters(0, "error");
+        });
+
+        currentPreviewTask.setOnCancelled(e -> {
+            tblCsvPreview.setItems(FXCollections.observableArrayList()); // ensure list present
+            tblCsvPreview.setPlaceholder(new Label("Cancelled"));
+            setPreviewCounters(0, "cancelled");
         });
 
         new Thread(currentPreviewTask, "preview-builder").start();
@@ -597,5 +627,4 @@ public class Main {
         if (n == null || n.isEmpty()) return prefix;
         return prefix + "." + n;
     }
-
 }

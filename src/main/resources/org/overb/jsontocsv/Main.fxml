@@ -65,6 +65,8 @@
                                                     </accelerator>
                                                 </MenuItem>
                                                 <SeparatorMenuItem/>
+                                                <MenuItem fx:id="mnuRebuildDefinitions" mnemonicParsing="false"
+                                                          onAction="#rebuildDefinitions" text="Rebuild definitions"/>
                                                 <MenuItem fx:id="mnuResetDefinitions" mnemonicParsing="false"
                                                           onAction="#resetDefinitions" text="Reset definitions"/>
                                                 <MenuItem fx:id="mnuResetAll" mnemonicParsing="false"
@@ -122,7 +124,7 @@
                 <Label text="Preview time:"/>
                 <Label fx:id="lblPreviewTime" text="-"/>
                 <Pane HBox.hgrow="ALWAYS"/>
-                <Label fx:id="lblVersion" text="© 2025 Cristi Stan"/>
+                <Label text="©2025 Cristi Stan"/>
             </items>
         </ToolBar>
     </items>

@@ -16,7 +16,7 @@ public class RootValidator {
 
     public static void validateRootField(JsonNode loadedJson, JsonSchemaHelper.Schema currentSchema, TextField txtRoot) {
         String styleOk = "";
-        String styleError = "-fx-border-color: #d33; -fx-border-width: 2; -fx-background-color: -fx-control-inner-background;";
+        String styleError = "-fx-border-color: #d33; -fx-border-width: 1; -fx-background-color: -fx-control-inner-background;";
         Tooltip tip;
         if (loadedJson == null || currentSchema == null) {
             txtRoot.setStyle(styleOk);
