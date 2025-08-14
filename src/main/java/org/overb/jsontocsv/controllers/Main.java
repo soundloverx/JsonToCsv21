@@ -17,7 +17,6 @@ import javafx.scene.input.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.Window;
-import javafx.util.Callback;
 import org.overb.jsontocsv.App;
 import org.overb.jsontocsv.dto.CsvColumnDefinition;
 import org.overb.jsontocsv.dto.CsvDefinitionsBundle;
@@ -72,6 +71,7 @@ public class Main {
 
     private static final DataFormat NAMED_SCHEMA_LIST = new DataFormat("application/x-java-named-schema-list");
     private final ObservableList<CsvColumnDefinition> csvColumnDefinitions = FXCollections.observableArrayList();
+    private ReorderableRowFactory<CsvColumnDefinition> reorderFactory;
     private JsonNode loadedJson;
     private JsonSchemaHelper.Schema currentSchema;
     private TreeItem<NamedSchema> fullSchemaRoot;
@@ -129,14 +129,17 @@ public class Main {
         jsonPathColumn.setCellValueFactory(new PropertyValueFactory<>("jsonSource"));
         customColumn.setCellValueFactory(new PropertyValueFactory<>("custom"));
         customColumn.setCellFactory(CheckBoxTableCell.forTableColumn(customColumn));
+
         tblColumnDefinitions.setItems(csvColumnDefinitions);
-        Callback<TableView<CsvColumnDefinition>, TableRow<CsvColumnDefinition>> reorderFactory = new ReorderableRowFactory<>(csvColumnDefinitions);
+        tblColumnDefinitions.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        reorderFactory = new ReorderableRowFactory<>(csvColumnDefinitions);
         tblColumnDefinitions.setRowFactory(tv -> {
             TableRow<CsvColumnDefinition> row = reorderFactory.call(tv);
             row.setOnMouseClicked(evt -> editColumnDefinition(evt, row));
             return row;
         });
         tblColumnDefinitions.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+
         csvColumnDefinitions.addListener((ListChangeListener<CsvColumnDefinition>) change -> {
             updateColumnsCounter();
             if (change.next()) {
@@ -189,19 +192,13 @@ public class Main {
             }
             ObservableList<CsvColumnDefinition> csvDefinitions = tblColumnDefinitions.getItems();
             for (JsonDragNode item : items) {
-                String csvColumn = item.node();
+                String csvColumn = item.node().toLowerCase();
                 if (App.properties.isColumnsSnakeCase()) {
                     csvColumn = CustomStringUtils.generateColumnName(item.node());
                 }
-
-                Set<String> existing = csvDefinitions.stream()
-                        .map(CsvColumnDefinition::getColumnName)
-                        .collect(Collectors.toSet());
-                if (existing.contains(csvColumn)) {
-                    csvColumn = csvColumn + "_" + UUID.randomUUID();
-                }
+                String uniqueColumnName = ensureUniqueColumnName(csvColumn, csvDefinitions);
                 CsvColumnDefinition def = new CsvColumnDefinition();
-                def.setColumnName(csvColumn);
+                def.setColumnName(uniqueColumnName);
                 def.setJsonSource(item.node());
                 def.setType(ColumnTypes.DEFAULT);
                 csvDefinitions.add(def);
@@ -266,6 +263,9 @@ public class Main {
     private void resetDefinitions() {
         tblCsvPreview.setItems(FXCollections.observableArrayList());
         csvColumnDefinitions.clear();
+        if (reorderFactory != null) {
+            reorderFactory.resetHistory();
+        }
         tblColumnDefinitions.getItems().clear();
         txtRoot.setText(null);
         currentSchema = null;
@@ -312,7 +312,7 @@ public class Main {
             setControlsEnabled(false);
             loadedJson = JsonIo.loadJsonFile(file);
             loadJsonSchemaIntoTree();
-            if (App.properties.isAutoConvertOnLoad()) {
+            if (App.properties.isAutoConvertOnLoad() && csvColumnDefinitions.isEmpty()) {
                 parseJsonIntoCsvColumns(loadedJson);
             }
             App.properties.addRecentFile(file.getAbsolutePath());
@@ -426,12 +426,29 @@ public class Main {
             }
         }
         for (String columnName : columns) {
-            String csvColumn = columnName;
+            String csvColumn = columnName.toLowerCase();
             if (App.properties.isColumnsSnakeCase()) {
                 csvColumn = CustomStringUtils.generateColumnName(columnName);
             }
-            csvColumnDefinitions.add(new CsvColumnDefinition(csvColumn, columnName, ColumnTypes.DEFAULT));
+            String uniqueColumnName = ensureUniqueColumnName(csvColumn, csvColumnDefinitions);
+            csvColumnDefinitions.add(new CsvColumnDefinition(uniqueColumnName, columnName, ColumnTypes.DEFAULT));
         }
+    }
+
+    private String ensureUniqueColumnName(String columnName, ObservableList<CsvColumnDefinition> csvDefinitions) {
+        String uniqueColumn = columnName;
+        int suffix = 0;
+        while (true) {
+            Set<String> existing = csvDefinitions.stream()
+                    .map(col -> col.getColumnName().toLowerCase())
+                    .collect(Collectors.toSet());
+            if (existing.contains(uniqueColumn.toLowerCase())) {
+                uniqueColumn = columnName + "_" + ++suffix;
+                continue;
+            }
+            break;
+        }
+        return uniqueColumn;
     }
 
     private void generateCsvPreview() {
@@ -518,6 +535,9 @@ public class Main {
             CsvDefinitionsBundle bundle = JsonIo.MAPPER.readValue(file, CsvDefinitionsBundle.class);
             txtRoot.setText(bundle.root() != null ? bundle.root() : "");
             csvColumnDefinitions.setAll(bundle.definitions() != null ? bundle.definitions() : List.of());
+            if (reorderFactory != null) {
+                reorderFactory.resetHistory();
+            }
             definitionsChanged = false;
             tblColumnDefinitions.refresh();
             generateCsvPreview();
@@ -535,15 +555,15 @@ public class Main {
     }
 
     private boolean promptSaveIfNeeded() {
-        if (!definitionsChanged) return true;
-
+        if (!definitionsChanged) {
+            return true;
+        }
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.initOwner(window);
         alert.setTitle("Unsaved changes");
         alert.setHeaderText("You have unsaved CSV definitions.");
         alert.setContentText("Do you want to save your changes before continuing?");
         alert.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
-
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isEmpty() || result.get() == ButtonType.CANCEL) {
             return false;

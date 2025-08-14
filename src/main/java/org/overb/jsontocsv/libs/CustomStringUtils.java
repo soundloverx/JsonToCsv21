@@ -45,6 +45,10 @@ public class CustomStringUtils {
     }
 
     public static String generateColumnName(String original) {
+        return generateColumnName(original, false);
+    }
+
+    public static String generateColumnName(String original, boolean allowMultipleUnderscores) {
         if (original.startsWith("\"") && original.endsWith("\"")) {
             original = original.substring(1, original.length() - 1);
         }
@@ -53,14 +57,16 @@ public class CustomStringUtils {
             return camelToSnake(original);
         }
         String fixed = original.replaceAll("[^a-zA-Z0-9]", "_");
-        while (fixed.startsWith("_")) {
-            fixed = fixed.substring(1);
-        }
-        while (fixed.contains("__")) {
-            fixed = fixed.replace("__", "_");
-        }
-        while (fixed.endsWith("_")) {
-            fixed = fixed.substring(0, fixed.length() - 1);
+        if (!allowMultipleUnderscores) {
+            while (fixed.startsWith("_")) {
+                fixed = fixed.substring(1);
+            }
+            while (fixed.contains("__")) {
+                fixed = fixed.replace("__", "_");
+            }
+            while (fixed.endsWith("_")) {
+                fixed = fixed.substring(0, fixed.length() - 1);
+            }
         }
         return fixed.toLowerCase();
     }

@@ -49,11 +49,32 @@ public class EditColumn {
     private CsvColumnDefinition definitionToEdit;
     @Setter
     private ObservableList<CsvColumnDefinition> csvColumnDefinitions;
+    private boolean updatingColumnName = false;
 
     public void initialize() {
         rbDefault.setUserData(ColumnTypes.DEFAULT);
         rbLiteral.setUserData(ColumnTypes.LITERAL);
         rbFormula.setUserData(ColumnTypes.FORMULA);
+        txtColumnName.textProperty().addListener((obs, oldV, newV) -> makeColumnNameLowercase());
+    }
+
+    private void makeColumnNameLowercase() {
+        if (updatingColumnName) {
+            return;
+        }
+        String current = txtColumnName.getText();
+        String normalized = App.properties.isColumnsSnakeCase() ? CustomStringUtils.generateColumnName(current, true) : current.toLowerCase();
+        if (Objects.equals(current, normalized)) {
+            return;
+        }
+        try {
+            updatingColumnName = true;
+            int caret = txtColumnName.getCaretPosition();
+            txtColumnName.setText(normalized);
+            txtColumnName.positionCaret(Math.min(caret, normalized.length()));
+        } finally {
+            updatingColumnName = false;
+        }
     }
 
     @FXML
@@ -85,10 +106,6 @@ public class EditColumn {
         if (name.isEmpty()) {
             UiHelper.messageBox(dialogStage, Alert.AlertType.ERROR, "Error", "Column name cannot be empty.");
             return;
-        }
-        if (App.properties.isColumnsSnakeCase()) {
-            name = CustomStringUtils.generateColumnName(name);
-            txtColumnName.setText(name);
         }
         for (CsvColumnDefinition definition : csvColumnDefinitions) {
             if (definition.getColumnName().equals(name) && !definition.equals(definitionToEdit)) {
