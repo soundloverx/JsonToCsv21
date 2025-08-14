@@ -15,6 +15,7 @@ import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.*;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Callback;
 import org.overb.jsontocsv.App;
@@ -76,6 +77,8 @@ public class Main {
     private TreeItem<NamedSchema> fullSchemaRoot;
     private Window window;
     private Task<ObservableList<Map<String, String>>> currentPreviewTask;
+    private boolean definitionsChanged = false;
+    private boolean closeHandlerRegistered = false;
 
     @FXML
     public void initialize() {
@@ -91,6 +94,14 @@ public class Main {
         tvJsonSchema.sceneProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 this.window = newValue.getWindow();
+                if (!closeHandlerRegistered && this.window instanceof Stage stage) {
+                    closeHandlerRegistered = true;
+                    stage.setOnCloseRequest(evt -> {
+                        if (!promptSaveIfNeeded()) {
+                            evt.consume();
+                        }
+                    });
+                }
             }
         });
         tvJsonSchema.setCellFactory(tv -> new NamedSchemaTreeCell());
@@ -129,6 +140,7 @@ public class Main {
         csvColumnDefinitions.addListener((ListChangeListener<CsvColumnDefinition>) change -> {
             updateColumnsCounter();
             if (change.next()) {
+                definitionsChanged = true;
                 generateCsvPreview();
             }
         });
@@ -387,11 +399,17 @@ public class Main {
         } else if (csvColumnDefinitions.isEmpty()) {
             Optional<String> recommendedRoot = JsonRootDetector.detectSuggestedRoot(loadedJson);
             if (recommendedRoot.isPresent()) {
-//                UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info", "You have loaded a nested JSON.\nAutomatically detected root: " + recommendedRoot.orElse("N/A"));
                 txtRoot.setText(recommendedRoot.get());
                 loadSimpleJson(JsonPath.navigate(rootNode, recommendedRoot.get()));
+                if (csvColumnDefinitions.isEmpty()) {
+                    UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info",
+                            "Unable to automatically detect the data root in the nested JSON.");
+                    txtRoot.setText(null);
+                }
             } else {
-                UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info", "You have loaded a nested JSON.\nYou have to manually configure the CSV columns.\nRemember to fill in the root node name.");
+                UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info",
+                        "Unable to automatically detect the data root in the nested JSON.");
+                txtRoot.setText(null);
             }
             RootValidator.validateRootField(loadedJson, currentSchema, txtRoot);
         } else {
@@ -481,6 +499,9 @@ public class Main {
     }
 
     public void mnuLoadCsvDefinitions(ActionEvent actionEvent) {
+        if (!promptSaveIfNeeded()) {
+            return;
+        }
         File file = UiHelper.openFileChooser(window, FileDialogTypes.LOAD, "Load J2CSV definitions", new FileChooser.ExtensionFilter("J2CSV Files (*.j2csv)", "*.j2csv"));
         if (file == null) return;
         loadCsvDefinitions(file);
@@ -497,6 +518,7 @@ public class Main {
             CsvDefinitionsBundle bundle = JsonIo.MAPPER.readValue(file, CsvDefinitionsBundle.class);
             txtRoot.setText(bundle.root() != null ? bundle.root() : "");
             csvColumnDefinitions.setAll(bundle.definitions() != null ? bundle.definitions() : List.of());
+            definitionsChanged = false;
             tblColumnDefinitions.refresh();
             generateCsvPreview();
             App.properties.addRecentFile(file.getAbsolutePath());
@@ -509,13 +531,37 @@ public class Main {
     }
 
     public void saveCsvDefinitions(ActionEvent actionEvent) {
+        saveCsvDefinitionsInteractive();
+    }
+
+    private boolean promptSaveIfNeeded() {
+        if (!definitionsChanged) return true;
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.initOwner(window);
+        alert.setTitle("Unsaved changes");
+        alert.setHeaderText("You have unsaved CSV definitions.");
+        alert.setContentText("Do you want to save your changes before continuing?");
+        alert.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isEmpty() || result.get() == ButtonType.CANCEL) {
+            return false;
+        }
+        if (result.get() == ButtonType.NO) {
+            return true;
+        }
+        return saveCsvDefinitionsInteractive();
+    }
+
+    public boolean saveCsvDefinitionsInteractive() {
         if (csvColumnDefinitions.isEmpty()) {
             UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Alert", "Nothing to save.");
-            return;
+            return true;
         }
         File file = UiHelper.openFileChooser(window, FileDialogTypes.SAVE, "SAVE J2CSV definitions", new FileChooser.ExtensionFilter("J2CSV Files (*.j2csv)", "*.j2csv"));
         if (file == null) {
-            return;
+            return false;
         }
         if (!file.getName().toLowerCase(Locale.ROOT).endsWith(".j2csv")) {
             file = new File(file.getParentFile(), file.getName() + ".j2csv");
@@ -524,11 +570,14 @@ public class Main {
         try {
             CsvDefinitionsBundle toSave = new CsvDefinitionsBundle(txtRoot.getText(), csvColumnDefinitions);
             JsonIo.MAPPER.writerWithDefaultPrettyPrinter().writeValue(file, toSave);
+            definitionsChanged = false;
+            return true;
         } catch (Exception error) {
             UiHelper.errorBox(window, error);
         } finally {
             setControlsEnabled(true);
         }
+        return false;
     }
 
     private void updateColumnsCounter() {
@@ -558,6 +607,9 @@ public class Main {
         for (String filePath : App.properties.getRecentFiles()) {
             MenuItem mi = new MenuItem(filePath);
             mi.setOnAction(evt -> {
+                if (!promptSaveIfNeeded()) {
+                    return;
+                }
                 File file = new File(((MenuItem) evt.getSource()).getText());
                 if (file.getName().endsWith(".j2csv")) {
                     loadCsvDefinitions(file);
