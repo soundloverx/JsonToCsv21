@@ -1,14 +1,16 @@
 ### Overview
 Json2Csv is a desktop application built with JavaFX 21 that lets you interactively convert JSON to CSV.
 
-- Load a JSON file (supports .json and .json.gz)
-- Inspect the inferred JSON schema in a tree view
-- Drag fields into a CSV definition table (supports nested arrays)
+- Load a JSON file (supports .json and .json.gz) or drag a file into the window
+- Inspect the inferred JSON schema in a tree view, with instant search/filter
+- Drag fields into a CSV definition table (supports nested arrays); drag to reorder columns
 - Live CSV preview as you change definitions
-- Export CSV and save/load your column definition presets (.j2csv)
+- Export CSV and save/load your column definition presets (.j2csv); drag a .j2csv file onto the table to load
 - Custom columns via literals and formulas (CURRENT_TIMESTAMP, CONCAT, FIND, JSON)
 - Preferences: dark mode, snake_case column names, preview limits, and how to render nulls
 - Optional update check from an endpoint configured in resources
+- Recent files menu for quick access to JSON or .j2csv files
+- Auto-detects a likely JSON root array for nested data and suggests it automatically
 
 
 ### Requirements
@@ -99,6 +101,9 @@ File → Preferences...
 #### Keyboard shortcuts
 - Add column definition... → F4
 - Refresh preview → F5
+- Delete selected columns → Del
+- Undo last delete → Ctrl+Z
+- Redo delete → Ctrl+Y
 
 
 ### Tips for nested JSON
@@ -138,7 +143,7 @@ The MSI installs a self-contained app with a bundled Java runtime, start menu en
 
 
 ### Version and updates
-- App version is sourced from src/main/resources/app.properties: `version=${project.version}` (resolved at build time from pom.xml, currently 1.0.1).
+- App version is sourced from src/main/resources/app.properties: `version=${project.version}` (resolved at build time from pom.xml, currently `1.0.3`).
 - Update check URL is configurable in the same file: `update=<url>`.
 
 

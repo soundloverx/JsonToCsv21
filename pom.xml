@@ -7,7 +7,7 @@
 
     <groupId>org.overb</groupId>
     <artifactId>json2csv</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
     <name>Json2Csv</name>
 
     <properties>
