@@ -315,7 +315,6 @@ public class Main {
             if (App.properties.isAutoConvertOnLoad() && csvColumnDefinitions.isEmpty()) {
                 parseJsonIntoCsvColumns(loadedJson);
             } else {
-                setPreviewCounters(0, "-");
                 generateCsvPreview();
             }
             App.properties.addRecentFile(file.getAbsolutePath());
