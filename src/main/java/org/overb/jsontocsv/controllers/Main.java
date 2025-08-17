@@ -314,10 +314,12 @@ public class Main {
             loadJsonSchemaIntoTree();
             if (App.properties.isAutoConvertOnLoad() && csvColumnDefinitions.isEmpty()) {
                 parseJsonIntoCsvColumns(loadedJson);
+            } else {
+                setPreviewCounters(0, "-");
+                generateCsvPreview();
             }
             App.properties.addRecentFile(file.getAbsolutePath());
             rebuildRecentFilesMenu();
-            setPreviewCounters(0, "-");
         } catch (Exception error) {
             UiHelper.errorBox(window, error);
         } finally {
@@ -402,19 +404,18 @@ public class Main {
                 txtRoot.setText(recommendedRoot.get());
                 loadSimpleJson(JsonPath.navigate(rootNode, recommendedRoot.get()));
                 if (csvColumnDefinitions.isEmpty()) {
+                    txtRoot.setText(null);
                     UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info",
                             "Unable to automatically detect the data root in the nested JSON.");
-                    txtRoot.setText(null);
                 }
             } else {
+                txtRoot.setText(null);
                 UiHelper.messageBox(window, Alert.AlertType.INFORMATION, "Info",
                         "Unable to automatically detect the data root in the nested JSON.");
-                txtRoot.setText(null);
             }
             RootValidator.validateRootField(loadedJson, currentSchema, txtRoot);
-        } else {
-            generateCsvPreview();
         }
+        generateCsvPreview();
     }
 
     private void loadSimpleJson(JsonNode rootNode) throws Exception {
